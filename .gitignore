@@ -1,0 +1,5 @@
+.vscode
+.log
+
+deployments/.release
+config/config.json

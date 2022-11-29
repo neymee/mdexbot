@@ -1,0 +1,22 @@
+{
+    "bot": {
+        "token": ""
+    },
+    "db": {
+        "host": "localhost",
+        "port": 5432,
+        "user": "mdex-bot",
+        "password": "pwd123",
+        "name": "mdex-bot-db",
+        "sll": "disable"
+    },
+    "log": {
+        "level": "trace",
+        "output": ["stdout"],
+        "lumberjack": {
+            "filename": "./.log/mdex-bot.log",
+            "compress": true,
+            "maxage": 30
+        }
+    }
+}
