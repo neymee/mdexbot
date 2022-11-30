@@ -44,14 +44,3 @@ func withKeyboard(keyboard [][]telebot.InlineButton) sendOptionFunc {
 		}
 	}
 }
-
-func withRespond(c telebot.Context) sendOptionFunc {
-	return func(*telebot.SendOptions) {
-		if err := c.Respond(); err != nil {
-			utils.Log(utils.ReqCtx(c), "bot.withRespond").Error().
-				Err(err).
-				Int64("recipient", c.Chat().ID).
-				Msg("Respond error")
-		}
-	}
-}

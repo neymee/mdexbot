@@ -87,6 +87,15 @@ func middlewares(method domain.Command) []telebot.MiddlewareFunc {
 				return next(c)
 			}
 		},
+		func(next telebot.HandlerFunc) telebot.HandlerFunc {
+			// automatically respond to callback if any
+			return func(c telebot.Context) error {
+				if c.Callback() != nil {
+					defer c.Respond()
+				}
+				return next(c)
+			}
+		},
 	}
 }
 
@@ -175,7 +184,6 @@ func onSubscribeBtn(s *service.Services) telebot.HandlerFunc {
 			ctx,
 			rec,
 			lang.SubscribeConfirmed(sub.MangaTitle, lang.GetFlagOrLang(sub.Language)),
-			withRespond(c),
 		)
 	}
 }
@@ -234,7 +242,6 @@ func onUnsubscribeBtn(s *service.Services) telebot.HandlerFunc {
 			ctx,
 			rec,
 			lang.UnsubscribeConfirmed(sub.MangaTitle, lang.GetFlagOrLang(sub.Language)),
-			withRespond(c),
 		)
 	}
 }
