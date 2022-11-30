@@ -1,14 +1,17 @@
 package bot
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/neymee/mdexbot/internal/bot/lang"
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/log"
 	"gopkg.in/telebot.v3"
 )
 
@@ -18,6 +21,21 @@ const (
 )
 
 var ErrInvalidLink = errors.New("invalid link")
+
+func setupReqCtx(c telebot.Context) {
+	traceID := time.Now().UnixMicro()
+	c.Set(string(log.KeyTraceID), &traceID)
+}
+
+func reqCtx(c telebot.Context) context.Context {
+	ctx := context.Background()
+	traceID, ok := c.Get(string(log.KeyTraceID)).(*int64)
+	if !ok {
+		return ctx
+	}
+	ctx = context.WithValue(ctx, log.KeyTraceID, traceID)
+	return ctx
+}
 
 // mangaIDFromURL extracts manga id from url
 func mangaIDFromURL(link string) (string, error) {

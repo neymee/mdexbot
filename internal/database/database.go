@@ -7,7 +7,6 @@ import (
 
 	"github.com/neymee/mdexbot/internal/config"
 	"github.com/neymee/mdexbot/internal/log"
-	"github.com/neymee/mdexbot/internal/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -30,8 +29,10 @@ func New(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 	)
 
 	for i := 0; i < 3; i++ {
-		if utils.IsContextDone(ctx) {
+		select {
+		case <-ctx.Done():
 			return nil, fmt.Errorf("interrupted: context is cancelled")
+		default:
 		}
 
 		db, err = gorm.Open(postgres.Open(conn), &gorm.Config{

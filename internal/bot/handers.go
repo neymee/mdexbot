@@ -10,7 +10,6 @@ import (
 	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/service"
 	"github.com/neymee/mdexbot/internal/service/subscription"
-	"github.com/neymee/mdexbot/internal/utils"
 	"gopkg.in/telebot.v3"
 )
 
@@ -30,13 +29,13 @@ func initHandlers(bot *telebot.Bot, s *service.Services) {
 	bot.Handle(CmdCancel.Endpoint(), onCancel(s), middlewares(CmdCancel)...)
 
 	bot.OnError = func(err error, c telebot.Context) {
-		log.Error(utils.ReqCtx(c), "bot.onError", err).
+		log.Error(reqCtx(c), "bot.onError", err).
 			Int64("recipient", c.Chat().ID).
 			Int("message_id", c.Message().ID).
 			Msg("Error during processing request")
 
 		if _, ok := err.(InternalError); ok {
-			send(utils.ReqCtx(c), domain.RecipientFromInt64(c.Chat().ID), lang.ErrInternalError())
+			send(reqCtx(c), domain.RecipientFromInt64(c.Chat().ID), lang.ErrInternalError())
 		}
 	}
 }
@@ -46,7 +45,7 @@ func middlewares(method Command) []telebot.MiddlewareFunc {
 		func(next telebot.HandlerFunc) telebot.HandlerFunc {
 			// setup context
 			return func(c telebot.Context) error {
-				utils.TelebotCtxSetup(c)
+				setupReqCtx(c)
 				return next(c)
 			}
 		},
@@ -55,7 +54,7 @@ func middlewares(method Command) []telebot.MiddlewareFunc {
 			return func(c telebot.Context) error {
 				defer func() {
 					if err := recover(); err != nil {
-						log.Log(utils.ReqCtx(c), method.String()).Error().
+						log.Log(reqCtx(c), method.String()).Error().
 							Interface("panic", err).
 							Msg("Panic recovered")
 					}
@@ -66,7 +65,7 @@ func middlewares(method Command) []telebot.MiddlewareFunc {
 		func(next telebot.HandlerFunc) telebot.HandlerFunc {
 			// log request
 			return func(c telebot.Context) error {
-				log.Log(utils.ReqCtx(c), method.String()).Trace().
+				log.Log(reqCtx(c), method.String()).Trace().
 					Int64("chat_id", c.Chat().ID).
 					Int("message_id", c.Message().ID).
 					Str("text", c.Text()).
@@ -79,7 +78,7 @@ func middlewares(method Command) []telebot.MiddlewareFunc {
 			// duration
 			return func(c telebot.Context) error {
 				defer func(start time.Time) {
-					log.Log(utils.ReqCtx(c), method.String()).Trace().
+					log.Log(reqCtx(c), method.String()).Trace().
 						Dur("duration", time.Since(start)).
 						Int64("chat_id", c.Chat().ID).
 						Msg("Request processed")
@@ -102,7 +101,7 @@ func middlewares(method Command) []telebot.MiddlewareFunc {
 func onStart(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
 		return send(
-			utils.ReqCtx(c),
+			reqCtx(c),
 			domain.RecipientFromInt64(c.Chat().ID),
 			lang.Start(),
 		)
@@ -111,7 +110,7 @@ func onStart(s *service.Services) telebot.HandlerFunc {
 
 func onText(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		ctx := utils.ReqCtx(c)
+		ctx := reqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
@@ -151,7 +150,7 @@ func onText(s *service.Services) telebot.HandlerFunc {
 
 func onSubscribe(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		ctx := utils.ReqCtx(c)
+		ctx := reqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
 		err := s.Conversation.SetConversationContext(ctx, rec, CmdSubscribe.String())
@@ -165,7 +164,7 @@ func onSubscribe(s *service.Services) telebot.HandlerFunc {
 
 func onSubscribeBtn(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		ctx := utils.ReqCtx(c)
+		ctx := reqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
 		mangaID, mangaLang, err := parseButtonData(c.Callback().Data)
@@ -190,7 +189,7 @@ func onSubscribeBtn(s *service.Services) telebot.HandlerFunc {
 
 func onUnsubscribe(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		ctx := utils.ReqCtx(c)
+		ctx := reqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
@@ -225,7 +224,7 @@ func onUnsubscribe(s *service.Services) telebot.HandlerFunc {
 
 func onUnsubscribeBtn(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		ctx := utils.ReqCtx(c)
+		ctx := reqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
 		mangaID, mangaLang, err := parseButtonData(c.Callback().Data)
@@ -248,7 +247,7 @@ func onUnsubscribeBtn(s *service.Services) telebot.HandlerFunc {
 
 func onList(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		ctx := utils.ReqCtx(c)
+		ctx := reqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
@@ -281,7 +280,7 @@ func onList(s *service.Services) telebot.HandlerFunc {
 
 func onCancel(s *service.Services) telebot.HandlerFunc {
 	return func(c telebot.Context) error {
-		ctx := utils.ReqCtx(c)
+		ctx := reqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
