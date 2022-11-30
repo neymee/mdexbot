@@ -1,5 +1,5 @@
 .vscode
 .log
+/config.json
 
-deployments/.release
-config/config.json
+deployments/release

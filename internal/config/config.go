@@ -2,9 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"flag"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -38,15 +36,17 @@ type logConfig struct {
 }
 
 func Load() (*Config, error) {
-	cfgPath := flag.String("cfg", "./config/config.json", "Path to config .json file")
-	flag.Parse()
+	cfgPath := "./config.json"
+	if p := os.Getenv("CONFIG_PATH"); p != "" {
+		cfgPath = p
+	}
 
-	file, err := os.Open(*cfgPath)
+	file, err := os.Open(cfgPath)
 	if err != nil {
 		return nil, err
 	}
 
-	cfgJson, err := ioutil.ReadAll(file)
+	cfgJson, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +69,6 @@ func ConfigGlobalLogger(cfg *Config) {
 			} else {
 				writers = append(writers, os.Stdout)
 			}
-		case "stderr":
-			writers = append(writers, os.Stderr)
 		}
 	}
 	log.Logger = log.Output(zerolog.MultiLevelWriter(writers...))
