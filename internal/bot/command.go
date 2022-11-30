@@ -1,4 +1,4 @@
-package domain
+package bot
 
 type Command string
 

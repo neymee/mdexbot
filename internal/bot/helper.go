@@ -53,7 +53,7 @@ func buildLanguageButtons(manga domain.Manga) [][]telebot.InlineButton {
 			{
 				Text:   "Any",
 				Data:   formatButtonData(manga.ID, "any"),
-				Unique: domain.CmdSubscribeBtn.String(),
+				Unique: CmdSubscribeBtn.String(),
 			},
 		},
 	}
@@ -76,7 +76,7 @@ func buildLanguageButtons(manga domain.Manga) [][]telebot.InlineButton {
 			telebot.InlineButton{
 				Text:   text,
 				Data:   formatButtonData(manga.ID, translationLang),
-				Unique: domain.CmdSubscribeBtn.String(),
+				Unique: CmdSubscribeBtn.String(),
 			},
 		)
 

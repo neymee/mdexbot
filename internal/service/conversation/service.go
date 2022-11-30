@@ -7,8 +7,8 @@ import (
 )
 
 type Service interface {
-	ConversationContext(ctx context.Context, recipient domain.Recipient) (domain.Command, error)
-	SetConversationContext(ctx context.Context, recipient domain.Recipient, cmd domain.Command) error
+	ConversationContext(ctx context.Context, recipient domain.Recipient) (string, error)
+	SetConversationContext(ctx context.Context, recipient domain.Recipient, cmd string) error
 	DeleteConversationContext(ctx context.Context, recipient domain.Recipient) error
 }
 
@@ -20,11 +20,11 @@ func New(r ConversationRepo) Service {
 	return &service{repo: r}
 }
 
-func (s *service) ConversationContext(ctx context.Context, recipient domain.Recipient) (domain.Command, error) {
+func (s *service) ConversationContext(ctx context.Context, recipient domain.Recipient) (string, error) {
 	return s.repo.ConversationContext(ctx, recipient)
 }
 
-func (s *service) SetConversationContext(ctx context.Context, recipient domain.Recipient, cmd domain.Command) error {
+func (s *service) SetConversationContext(ctx context.Context, recipient domain.Recipient, cmd string) error {
 	return s.repo.SetConversationContext(ctx, recipient, cmd)
 }
 

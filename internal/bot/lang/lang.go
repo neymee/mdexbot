@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"html"
 	"strings"
-
-	"github.com/neymee/mdexbot/internal/domain"
 )
 
 const (
@@ -22,7 +20,7 @@ const (
 
 	subscribeInit              = "Send me a link on a manga you want to track."
 	subscribeChooseLanguage    = "<b><i>%s</i></b>\n\nChoose the language you want to track:"
-	subscribeConfirmed          = "Great! You will receive a message when a new chapter of [%s] <b><i>%s</i></b> is published."
+	subscribeConfirmed         = "Great! You will receive a message when a new chapter of [%s] <b><i>%s</i></b> is published."
 	subscribeAllreadyFollowing = "You're already following [%s] <b><i>%s</i></b>."
 
 	subscribeErrInvalidLink = "Link \"%s\" is not recognized. Please send a valid link to a manga page on mangadex.org.\n\nFor example: https://mangadex.org/title/d8a959f7-648e-4c8d-8f23-f1f3f8e129f3/one-punch-man"
@@ -40,7 +38,7 @@ func ErrInternalError() string {
 	return errInternalError
 }
 
-func ErrWrongContext(cmd domain.Command) string {
+func ErrWrongContext(cmd string) string {
 	cmdEscaped := html.EscapeString(string(cmd))
 	return fmt.Sprintf(errWrongContext, cmdEscaped)
 }
@@ -52,7 +50,7 @@ func Start() string {
 func CancelNoCommands() string {
 	return cancelNoCommands
 }
-func CancelSuccessful(cmd domain.Command) string {
+func CancelSuccessful(cmd string) string {
 	cmdEscaped := html.EscapeString(string(cmd))
 	return fmt.Sprintf(cancelSuccessful, cmdEscaped)
 }

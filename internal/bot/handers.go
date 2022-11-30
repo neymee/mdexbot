@@ -17,17 +17,17 @@ import (
 type InternalError error
 
 func initHandlers(bot *telebot.Bot, s *service.Services) {
-	bot.Handle(domain.CmdStart.Endpoint(), onStart(s), middlewares(domain.CmdStart)...)
+	bot.Handle(CmdStart.Endpoint(), onStart(s), middlewares(CmdStart)...)
 
-	bot.Handle(domain.CmdText.Endpoint(), onText(s), middlewares(domain.CmdText)...)
-	bot.Handle(domain.CmdSubscribe.Endpoint(), onSubscribe(s), middlewares(domain.CmdSubscribe)...)
-	bot.Handle(domain.CmdSubscribeBtn.Endpoint(), onSubscribeBtn(s), middlewares(domain.CmdSubscribeBtn)...)
+	bot.Handle(CmdText.Endpoint(), onText(s), middlewares(CmdText)...)
+	bot.Handle(CmdSubscribe.Endpoint(), onSubscribe(s), middlewares(CmdSubscribe)...)
+	bot.Handle(CmdSubscribeBtn.Endpoint(), onSubscribeBtn(s), middlewares(CmdSubscribeBtn)...)
 
-	bot.Handle(domain.CmdUnsubscribe.Endpoint(), onUnsubscribe(s), middlewares(domain.CmdUnsubscribe)...)
-	bot.Handle(domain.CmdUnsubscribeBtn.Endpoint(), onUnsubscribeBtn(s), middlewares(domain.CmdUnsubscribeBtn)...)
+	bot.Handle(CmdUnsubscribe.Endpoint(), onUnsubscribe(s), middlewares(CmdUnsubscribe)...)
+	bot.Handle(CmdUnsubscribeBtn.Endpoint(), onUnsubscribeBtn(s), middlewares(CmdUnsubscribeBtn)...)
 
-	bot.Handle(domain.CmdList.Endpoint(), onList(s), middlewares(domain.CmdList)...)
-	bot.Handle(domain.CmdCancel.Endpoint(), onCancel(s), middlewares(domain.CmdCancel)...)
+	bot.Handle(CmdList.Endpoint(), onList(s), middlewares(CmdList)...)
+	bot.Handle(CmdCancel.Endpoint(), onCancel(s), middlewares(CmdCancel)...)
 
 	bot.OnError = func(err error, c telebot.Context) {
 		log.Error(utils.ReqCtx(c), "bot.onError", err).
@@ -41,7 +41,7 @@ func initHandlers(bot *telebot.Bot, s *service.Services) {
 	}
 }
 
-func middlewares(method domain.Command) []telebot.MiddlewareFunc {
+func middlewares(method Command) []telebot.MiddlewareFunc {
 	return []telebot.MiddlewareFunc{
 		func(next telebot.HandlerFunc) telebot.HandlerFunc {
 			// setup context
@@ -119,7 +119,7 @@ func onText(s *service.Services) telebot.HandlerFunc {
 			return InternalError(err)
 		}
 
-		if cmd != domain.CmdSubscribe {
+		if cmd != CmdSubscribe.String() {
 			return send(ctx, rec, lang.Start())
 		}
 
@@ -154,7 +154,7 @@ func onSubscribe(s *service.Services) telebot.HandlerFunc {
 		ctx := utils.ReqCtx(c)
 		rec := domain.RecipientFromInt64(c.Chat().ID)
 
-		err := s.Conversation.SetConversationContext(ctx, rec, domain.CmdSubscribe)
+		err := s.Conversation.SetConversationContext(ctx, rec, CmdSubscribe.String())
 		if err != nil {
 			return InternalError(err)
 		}
@@ -214,7 +214,7 @@ func onUnsubscribe(s *service.Services) telebot.HandlerFunc {
 				{
 					Text:   fmt.Sprintf("[%s] %s", lang.GetFlagOrLang(sub.Language), sub.MangaTitle),
 					Data:   formatButtonData(sub.MangaID, sub.Language),
-					Unique: domain.CmdUnsubscribeBtn.String(),
+					Unique: CmdUnsubscribeBtn.String(),
 				},
 			})
 		}

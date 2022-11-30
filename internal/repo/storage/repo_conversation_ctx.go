@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (r *Repo) ConversationContext(ctx context.Context, recipient domain.Recipient) (domain.Command, error) {
+func (r *Repo) ConversationContext(ctx context.Context, recipient domain.Recipient) (string, error) {
 	defer func(t time.Time) {
 		log.Log(ctx, "storage.ConversationContext").Trace().
 			Dur("duration", time.Since(t)).
@@ -25,10 +25,10 @@ func (r *Repo) ConversationContext(ctx context.Context, recipient domain.Recipie
 	} else if res.Error != nil {
 		return "", res.Error
 	}
-	return domain.Command(convCtx.Command), nil
+	return convCtx.Command, nil
 }
 
-func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Recipient, cmd domain.Command) error {
+func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Recipient, cmd string) error {
 	defer func(t time.Time) {
 		log.Log(ctx, "storage.SetConversationContext").Trace().
 			Dur("duration", time.Since(t)).
@@ -47,7 +47,7 @@ func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Reci
 		},
 	).Create(&database.ConversationContext{
 		Recipient: recipient.Recipient(),
-		Command:   cmd.String(),
+		Command:   cmd,
 	})
 
 	return db.Error
