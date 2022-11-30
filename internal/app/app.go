@@ -6,9 +6,9 @@ import (
 	"github.com/neymee/mdexbot/internal/bot"
 	"github.com/neymee/mdexbot/internal/config"
 	"github.com/neymee/mdexbot/internal/database"
+	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/repo"
 	"github.com/neymee/mdexbot/internal/service"
-	"github.com/neymee/mdexbot/internal/utils"
 )
 
 func Run(ctx context.Context) {
@@ -16,19 +16,19 @@ func Run(ctx context.Context) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		utils.Log(ctx, method).Error().Err(err).Send()
+		log.Error(ctx, method, err).Send()
 		return
 	}
 
-	config.ConfigGlobalLogger(cfg)
+	log.Configure(cfg)
 
-	utils.Log(ctx, method).Info().
+	log.Log(ctx, method).Info().
 		Interface("config", cfg).
 		Msg("Starting with the following config")
 
 	db, err := database.New(ctx, cfg)
 	if err != nil {
-		utils.Log(ctx, method).Error().Err(err).Send()
+		log.Error(ctx, method, err).Send()
 		return
 	}
 
@@ -36,10 +36,10 @@ func Run(ctx context.Context) {
 	s := service.New(r.MDex, r.Storage, r.Storage)
 
 	bot.Start(ctx, cfg, s)
-	utils.Log(ctx, method).Info().Msg("App started")
+	log.Log(ctx, method).Info().Msg("App started")
 
 	<-ctx.Done()
 
-	utils.Log(ctx, method).Info().Msg("App is stopping...")
+	log.Log(ctx, method).Info().Msg("App is stopping...")
 	bot.Stop()
 }

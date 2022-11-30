@@ -6,7 +6,7 @@ import (
 
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/domain"
-	"github.com/neymee/mdexbot/internal/utils"
+	"github.com/neymee/mdexbot/internal/log"
 	"gorm.io/gorm/clause"
 )
 
@@ -16,7 +16,7 @@ func (r *Repo) SetUserSubscription(
 	sub domain.Subscription,
 ) error {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.SetUserSubscription").Trace().
+		log.Log(ctx, "storage.SetUserSubscription").Trace().
 			Dur("duration", time.Since(t)).
 			Interface("subscription", sub).
 			Send()
@@ -39,7 +39,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 	updatedAt time.Time,
 ) error {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.SetSubscriptionLastUpdate").Trace().
+		log.Log(ctx, "storage.SetSubscriptionLastUpdate").Trace().
 			Dur("duration", time.Since(t)).
 			Interface("subscription", sub).
 			Time("updated_at", updatedAt).
@@ -65,7 +65,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 
 func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient) ([]domain.Subscription, error) {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.UserSubscriptions").Trace().
+		log.Log(ctx, "storage.UserSubscriptions").Trace().
 			Dur("duration", time.Since(t)).
 			Str("recipient", recipient.Recipient()).
 			Send()
@@ -96,7 +96,7 @@ func (r *Repo) DeleteUserSubscription(
 	lang string,
 ) error {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.DeleteUserSubscription").Trace().
+		log.Log(ctx, "storage.DeleteUserSubscription").Trace().
 			Dur("duration", time.Since(t)).
 			Str("recipient", recipient.Recipient()).
 			Str("lang", lang).
@@ -115,7 +115,7 @@ func (r *Repo) DeleteUserSubscription(
 
 func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Recipient) error {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.DeleteAllSubscriptions").Trace().
+		log.Log(ctx, "storage.DeleteAllSubscriptions").Trace().
 			Dur("duration", time.Since(t)).
 			Str("recipient", recipient.Recipient()).
 			Send()
@@ -132,7 +132,7 @@ func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Reci
 
 func (r *Repo) AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExtended, error) {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.AllSubscriptions").Trace().
+		log.Log(ctx, "storage.AllSubscriptions").Trace().
 			Dur("duration", time.Since(t)).
 			Send()
 	}(time.Now())

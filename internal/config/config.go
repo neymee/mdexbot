@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -53,37 +51,4 @@ func Load() (*Config, error) {
 
 	var cfg *Config
 	return cfg, json.Unmarshal(cfgJson, &cfg)
-}
-
-func ConfigGlobalLogger(cfg *Config) {
-	writers := []io.Writer{}
-	for _, o := range cfg.Log.Output {
-		switch o {
-		case "file":
-			lumberjack := &cfg.Log.Lumberjack
-			writers = append(writers, lumberjack)
-			lumberjack.Rotate()
-		case "stdout":
-			if os.Getenv("PRETTY_LOGGING") == "true" {
-				writers = append(writers, zerolog.ConsoleWriter{Out: os.Stdout})
-			} else {
-				writers = append(writers, os.Stdout)
-			}
-		}
-	}
-	log.Logger = log.Output(zerolog.MultiLevelWriter(writers...))
-
-	lvl := map[string]zerolog.Level{
-		"trace":    zerolog.TraceLevel,
-		"debug":    zerolog.DebugLevel,
-		"info":     zerolog.InfoLevel,
-		"warn":     zerolog.WarnLevel,
-		"error":    zerolog.ErrorLevel,
-		"":         zerolog.ErrorLevel, // default
-		"fatal":    zerolog.FatalLevel,
-		"panic":    zerolog.PanicLevel,
-		"no":       zerolog.NoLevel,
-		"disabled": zerolog.Disabled,
-	}[cfg.Log.Level]
-	log.Logger = log.Level(lvl)
 }

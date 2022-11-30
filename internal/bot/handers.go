@@ -7,6 +7,7 @@ import (
 
 	"github.com/neymee/mdexbot/internal/bot/lang"
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/service"
 	"github.com/neymee/mdexbot/internal/service/subscription"
 	"github.com/neymee/mdexbot/internal/utils"
@@ -29,8 +30,7 @@ func initHandlers(bot *telebot.Bot, s *service.Services) {
 	bot.Handle(domain.CmdCancel.Endpoint(), onCancel(s), middlewares(domain.CmdCancel)...)
 
 	bot.OnError = func(err error, c telebot.Context) {
-		utils.Log(utils.ReqCtx(c), "bot.onError").Error().
-			Err(err).
+		log.Error(utils.ReqCtx(c), "bot.onError", err).
 			Int64("recipient", c.Chat().ID).
 			Int("message_id", c.Message().ID).
 			Msg("Error during processing request")
@@ -55,7 +55,7 @@ func middlewares(method domain.Command) []telebot.MiddlewareFunc {
 			return func(c telebot.Context) error {
 				defer func() {
 					if err := recover(); err != nil {
-						utils.Log(utils.ReqCtx(c), method.String()).Error().
+						log.Log(utils.ReqCtx(c), method.String()).Error().
 							Interface("panic", err).
 							Msg("Panic recovered")
 					}
@@ -66,7 +66,7 @@ func middlewares(method domain.Command) []telebot.MiddlewareFunc {
 		func(next telebot.HandlerFunc) telebot.HandlerFunc {
 			// log request
 			return func(c telebot.Context) error {
-				utils.Log(utils.ReqCtx(c), method.String()).Trace().
+				log.Log(utils.ReqCtx(c), method.String()).Trace().
 					Int64("chat_id", c.Chat().ID).
 					Int("message_id", c.Message().ID).
 					Str("text", c.Text()).
@@ -79,7 +79,7 @@ func middlewares(method domain.Command) []telebot.MiddlewareFunc {
 			// duration
 			return func(c telebot.Context) error {
 				defer func(start time.Time) {
-					utils.Log(utils.ReqCtx(c), method.String()).Trace().
+					log.Log(utils.ReqCtx(c), method.String()).Trace().
 						Dur("duration", time.Since(start)).
 						Int64("chat_id", c.Chat().ID).
 						Msg("Request processed")

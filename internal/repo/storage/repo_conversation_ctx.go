@@ -6,13 +6,13 @@ import (
 
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/domain"
-	"github.com/neymee/mdexbot/internal/utils"
+	"github.com/neymee/mdexbot/internal/log"
 	"gorm.io/gorm/clause"
 )
 
 func (r *Repo) ConversationContext(ctx context.Context, recipient domain.Recipient) (domain.Command, error) {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.ConversationContext").Trace().
+		log.Log(ctx, "storage.ConversationContext").Trace().
 			Dur("duration", time.Since(t)).
 			Str("recipient", recipient.Recipient()).
 			Send()
@@ -30,7 +30,7 @@ func (r *Repo) ConversationContext(ctx context.Context, recipient domain.Recipie
 
 func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Recipient, cmd domain.Command) error {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.SetConversationContext").Trace().
+		log.Log(ctx, "storage.SetConversationContext").Trace().
 			Dur("duration", time.Since(t)).
 			Interface("conversation_context", cmd).
 			Send()
@@ -55,7 +55,7 @@ func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Reci
 
 func (r *Repo) DeleteConversationContext(ctx context.Context, recipient domain.Recipient) error {
 	defer func(t time.Time) {
-		utils.Log(ctx, "storage.DeleteConversationContext").Trace().
+		log.Log(ctx, "storage.DeleteConversationContext").Trace().
 			Dur("duration", time.Since(t)).
 			Str("recipient", recipient.Recipient()).
 			Send()

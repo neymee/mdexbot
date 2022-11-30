@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/service/subscription"
-	"github.com/neymee/mdexbot/internal/utils"
 )
 
 const (
@@ -29,7 +29,7 @@ func New() *Repo {
 
 func (r *Repo) Manga(ctx context.Context, id string) (domain.Manga, error) {
 	defer func(start time.Time) {
-		utils.Log(ctx, "mdex.Manga").Trace().
+		log.Log(ctx, "mdex.Manga").Trace().
 			Dur("duration", time.Since(start)).
 			Str("id", id).
 			Send()
@@ -70,7 +70,7 @@ func (r *Repo) LastChapters(
 	publishedSince *time.Time,
 ) ([]domain.Chapter, error) {
 	defer func(start time.Time) {
-		utils.Log(ctx, "mdex.LastChapters").Trace().
+		log.Log(ctx, "mdex.LastChapters").Trace().
 			Dur("duration", time.Since(start)).
 			Str("manga_id", mangaID).
 			Interface("lang", lang).

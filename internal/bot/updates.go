@@ -8,8 +8,8 @@ import (
 
 	"github.com/neymee/mdexbot/internal/bot/lang"
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/service"
-	"github.com/neymee/mdexbot/internal/utils"
 	"gopkg.in/telebot.v3"
 )
 
@@ -32,13 +32,13 @@ func checkUpdates(ctx context.Context, s *service.Services) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			utils.Log(ctx, method).Error().Interface("panic", err).Msg("Panic recovered")
+			log.Log(ctx, method).Error().Interface("panic", err).Msg("Panic recovered")
 		}
 	}()
 
 	updates, err := s.Subscription.Updates(ctx)
 	if err != nil {
-		utils.Log(ctx, method).Error().Err(err).Msg("fetching updates error")
+		log.Error(ctx, method, err).Msg("fetching updates error")
 		return
 	}
 
@@ -52,27 +52,24 @@ func checkUpdates(ctx context.Context, s *service.Services) {
 				// user banned the bot, delete all their subscriptions
 				err := s.Subscription.UnsubscribeAll(ctx, rec)
 				if err != nil {
-					utils.Log(ctx, method).Error().
-						Err(err).
+					log.Error(ctx, method, err).
 						Int64("recipient", rec.AsInt64()).
 						Msg("UnsubscribeAll error")
 				}
 
 				err = s.Conversation.DeleteConversationContext(ctx, rec)
 				if err != nil {
-					utils.Log(ctx, method).Error().
-						Err(err).
+					log.Error(ctx, method, err).
 						Int64("recipient", rec.AsInt64()).
 						Msg("DeleteConversationContext error")
 				}
 
-				utils.Log(ctx, "Send").Warn().
+				log.Log(ctx, "Send").Warn().
 					Int64("recipient", rec.AsInt64()).
 					Msg("The recipient has banned the bot and theirs subscriptions have been removed")
 
 			} else if err != nil {
-				utils.Log(ctx, method).Error().
-					Err(err).
+				log.Error(ctx, method, err).
 					Int64("recipient", rec.AsInt64()).
 					Msg("error during sending message")
 			}
