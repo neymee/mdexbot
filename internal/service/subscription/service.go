@@ -131,17 +131,12 @@ func (s *service) Updates(ctx context.Context) ([]domain.Update, error) {
 		default:
 		}
 
-		var lang *string
-		if sub.Language != "any" {
-			lang = &sub.Language
-		}
-
-		chapters, err := s.mdex.LastChapters(ctx, sub.MangaID, lang, &sub.UpdatedAt)
+		chapters, err := s.newChapters(ctx, sub)
 		if err != nil {
 			return nil, err
 		}
 
-		err = s.storage.SetSubscriptionLastUpdate(ctx, sub.Subscription, time.Now().UTC())
+		err = s.storage.SetSubscriptionLastUpdate(ctx, sub.Subscription, time.Now().UTC(), chapters...)
 		if err != nil {
 			return nil, err
 		}
@@ -164,4 +159,31 @@ func (s *service) Updates(ctx context.Context) ([]domain.Update, error) {
 	}
 
 	return updates, nil
+}
+
+// newChapters returns chapters published since last subscription update.
+// Chapters that have already been notified will be filtered. 
+func (s *service) newChapters(ctx context.Context, sub domain.SubscriptionExtended) ([]domain.Chapter, error) {
+	var lang *string
+	if sub.Language != "any" {
+		lang = &sub.Language
+	}
+
+	lastChapters, err := s.mdex.LastChapters(ctx, sub.MangaID, lang, &sub.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	// filter chapters that have already been notified
+	chapters := []domain.Chapter{}
+	for _, ch := range lastChapters {
+		isNotified, err := s.storage.IsChapterNotified(ctx, sub.Subscription, ch)
+		if err != nil {
+			return nil, err
+		}
+		if !isNotified {
+			chapters = append(chapters, ch)
+		}
+	}
+	return chapters, nil
 }

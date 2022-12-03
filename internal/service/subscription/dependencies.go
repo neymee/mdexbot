@@ -35,6 +35,8 @@ type SubscriptionRepo interface {
 		ctx context.Context,
 		sub domain.Subscription,
 		updatedAt time.Time,
+		chapters ...domain.Chapter,
 	) error
+	IsChapterNotified(ctx context.Context, sub domain.Subscription, chapter domain.Chapter) (bool, error)
 	DeleteAllSubscriptions(context.Context, domain.Recipient) error
 }

@@ -44,18 +44,69 @@ func (r *Repo) SetSubscriptionLastUpdate(
 	ctx context.Context,
 	sub domain.Subscription,
 	updatedAt time.Time,
+	chapters ...domain.Chapter,
 ) error {
 	defer func(t time.Time) {
 		log.Log(ctx, "storage.SetSubscriptionLastUpdate").Trace().
 			Dur("duration", time.Since(t)).
 			Interface("subscription", sub).
 			Time("updated_at", updatedAt).
+			Interface("chapters", chapters).
 			Send()
 	}(time.Now())
 
+	topic := database.Topic{}
+	err := r.db.Model(&database.Topic{}).
+		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
+		Error
+	if err != nil {
+		return err
+	}
+
+	for _, c := range chapters {
+		err := r.db.Create(&database.NotifiedChapter{
+			TopicID: topic.ID,
+			Chapter: c.Chapter,
+			Volume:  c.Volume,
+		}).Error
+		if err != nil {
+			return err
+		}
+	}
+
 	return r.db.Model(&database.Topic{}).
-		Where("manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
+		Where("id = ?", topic.ID).
 		Update("updated_at", updatedAt).Error
+}
+
+func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, chapter domain.Chapter) (bool, error) {
+	defer func(t time.Time) {
+		log.Log(ctx, "storage.IsChapterNotified").Trace().
+			Dur("duration", time.Since(t)).
+			Interface("subscription", sub).
+			Str("chapter", chapter.Chapter).
+			Str("volume", chapter.Volume).
+			Send()
+	}(time.Now())
+
+	topic := database.Topic{}
+	err := r.db.Model(&database.Topic{}).
+		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
+		Error
+	if err != nil {
+		return false, err
+	}
+
+	res := r.db.First(
+		&database.NotifiedChapter{},
+		"topic_id = ? AND chapter = ? AND volume = ?",
+		topic.ID, chapter.Chapter, chapter.Volume,
+	)
+	if res.Error != nil {
+		return false, err
+	}
+
+	return res.RowsAffected > 0, nil
 }
 
 func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient) ([]domain.Subscription, error) {

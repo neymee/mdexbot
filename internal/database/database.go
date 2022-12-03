@@ -53,6 +53,7 @@ func New(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 		&ConversationContext{},
 		&Topic{},
 		&TopicSubscription{},
+		&NotifiedChapter{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("migration is failed: %w", err)
