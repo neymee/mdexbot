@@ -28,7 +28,7 @@ func runUpdatesChecker(ctx context.Context, s *service.Services) {
 }
 
 func checkUpdates(ctx context.Context, s *service.Services) {
-	const method = "checkUpdates"
+	const method = "bot.checkUpdates"
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -38,7 +38,7 @@ func checkUpdates(ctx context.Context, s *service.Services) {
 
 	updates, err := s.Subscription.Updates(ctx)
 	if err != nil {
-		log.Error(ctx, method, err).Msg("fetching updates error")
+		log.Error(ctx, method, err).Msg("Fetching updates error")
 		return
 	}
 
@@ -64,14 +64,14 @@ func checkUpdates(ctx context.Context, s *service.Services) {
 						Msg("DeleteConversationContext error")
 				}
 
-				log.Log(ctx, "Send").Warn().
+				log.Log(ctx, method).Warn().
 					Int64("recipient", rec.AsInt64()).
 					Msg("The recipient has banned the bot and theirs subscriptions have been removed")
 
 			} else if err != nil {
 				log.Error(ctx, method, err).
 					Int64("recipient", rec.AsInt64()).
-					Msg("error during sending message")
+					Msg("Error during sending message")
 			}
 		}
 	}

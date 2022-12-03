@@ -29,7 +29,7 @@ func initHandlers(bot *telebot.Bot, s *service.Services) {
 	bot.Handle(CmdCancel.Endpoint(), onCancel(s), middlewares(CmdCancel)...)
 
 	bot.OnError = func(err error, c telebot.Context) {
-		log.Error(reqCtx(c), "bot.onError", err).
+		log.Error(reqCtx(c), "bot.OnError", err).
 			Int64("recipient", c.Chat().ID).
 			Int("message_id", c.Message().ID).
 			Msg("Error during processing request")

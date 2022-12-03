@@ -41,7 +41,7 @@ func New(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 			Logger: logger.Default.LogMode(logger.Silent),
 		})
 		if err != nil && i < connectionAttempts-1 {
-			log.Log(ctx, "NewDB").Warn().Msg("Database is unavailable. Trying to reconnect...")
+			log.Log(ctx, "database.New").Warn().Msg("Database is unavailable. Trying to reconnect...")
 			time.Sleep(time.Second * 3)
 		}
 	}
