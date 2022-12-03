@@ -1,6 +1,10 @@
 package database
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type ConversationContext struct {
 	Recipient string `gorm:"primarykey"`
@@ -8,11 +12,16 @@ type ConversationContext struct {
 	CreatedAt time.Time
 }
 
-type Subscription struct {
-	Lang       string `gorm:"primarykey"`
-	Recipient  string `gorm:"primarykey"`
-	MangaID    string `gorm:"primarykey"`
-	MangaTitle string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+type Topic struct {
+	gorm.Model
+	MangaID       string `gorm:"uniqueIndex:idx_topic_manga_id_lang,where:deleted_at IS NULL"`
+	Lang          string `gorm:"uniqueIndex:idx_topic_manga_id_lang,where:deleted_at IS NULL"`
+	Title         string
+	Subscriptions []TopicSubscription
+}
+
+type TopicSubscription struct {
+	gorm.Model
+	TopicID   uint   `gorm:"uniqueIndex:idx_topic_subscription_topic_id_recipient,where:deleted_at IS NULL"`
+	Recipient string `gorm:"uniqueIndex:idx_topic_subscription_topic_id_recipient,where:deleted_at IS NULL"`
 }

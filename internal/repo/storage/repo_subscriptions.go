@@ -7,7 +7,6 @@ import (
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/domain"
 	"github.com/neymee/mdexbot/internal/log"
-	"gorm.io/gorm/clause"
 )
 
 func (r *Repo) SetUserSubscription(
@@ -22,20 +21,28 @@ func (r *Repo) SetUserSubscription(
 			Send()
 	}(time.Now())
 
-	dbSub := &database.Subscription{
-		MangaID:    sub.MangaID,
-		MangaTitle: sub.MangaTitle,
-		Lang:       sub.Language,
-		Recipient:  user.Recipient(),
+	topic := database.Topic{
+		MangaID: sub.MangaID,
+		Lang:    sub.Language,
+		Title:   sub.MangaTitle,
 	}
 
-	db := r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(dbSub)
-	return db.Error
+	err := r.db.FirstOrCreate(&topic, &topic).Error
+	if err != nil {
+		return err
+	}
+
+	topicSub := database.TopicSubscription{
+		TopicID:   topic.ID,
+		Recipient: user.Recipient(),
+	}
+
+	return r.db.Create(&topicSub).Error
 }
 
 func (r *Repo) SetSubscriptionLastUpdate(
 	ctx context.Context,
-	sub domain.SubscriptionExtended,
+	sub domain.Subscription,
 	updatedAt time.Time,
 ) error {
 	defer func(t time.Time) {
@@ -46,21 +53,9 @@ func (r *Repo) SetSubscriptionLastUpdate(
 			Send()
 	}(time.Now())
 
-	for _, rec := range sub.Recipients {
-		dbSub := &database.Subscription{
-			MangaID:    sub.MangaID,
-			MangaTitle: sub.MangaTitle,
-			Lang:       sub.Language,
-			Recipient:  rec.Recipient(),
-		}
-
-		err := r.db.Model(dbSub).Update("updated_at", updatedAt).Error
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return r.db.Model(&database.Topic{}).
+		Where("manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
+		Update("updated_at", updatedAt).Error
 }
 
 func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient) ([]domain.Subscription, error) {
@@ -71,17 +66,23 @@ func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient
 			Send()
 	}(time.Now())
 
-	var dbSubs []database.Subscription
-	err := r.db.Find(&dbSubs, "recipient = ?", recipient).Error
+	var topics []database.Topic
+
+	err := r.db.Joins(
+		`JOIN topic_subscriptions ON topic_subscriptions.topic_id = topics.id
+			AND topic_subscriptions.recipient = ?
+			AND topic_subscriptions.deleted_at IS NULL`,
+		recipient.Recipient(),
+	).Find(&topics).Error
 	if err != nil {
 		return nil, err
 	}
 
-	subs := make([]domain.Subscription, 0, len(dbSubs))
-	for _, s := range dbSubs {
+	subs := make([]domain.Subscription, 0, len(topics))
+	for _, s := range topics {
 		subs = append(subs, domain.Subscription{
 			MangaID:    s.MangaID,
-			MangaTitle: s.MangaTitle,
+			MangaTitle: s.Title,
 			Language:   s.Lang,
 		})
 	}
@@ -103,14 +104,29 @@ func (r *Repo) DeleteUserSubscription(
 			Send()
 	}(time.Now())
 
-	db := r.db.Delete(
-		&database.Subscription{},
-		"recipient = ? and manga_id = ? and lang = ?",
-		recipient,
-		mangaID,
-		lang,
-	)
-	return db.Error
+	topic := database.Topic{}
+	err := r.db.Model(&database.Topic{}).
+		Preload("Subscriptions").
+		Find(&topic, "manga_id = ? AND lang = ?", mangaID, lang).Error
+	if err != nil {
+		return err
+	}
+
+	err = r.db.Delete(
+		&database.TopicSubscription{},
+		"recipient = ? AND topic_id = ?",
+		recipient.Recipient(),
+		topic.ID,
+	).Error
+	if err != nil {
+		return err
+	}
+
+	if len(topic.Subscriptions) == 1 && topic.Subscriptions[0].Recipient == recipient.Recipient() {
+		return r.db.Delete(&topic).Error
+	}
+
+	return nil
 }
 
 func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Recipient) error {
@@ -121,13 +137,11 @@ func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Reci
 			Send()
 	}(time.Now())
 
-	db := r.db.Delete(
-		&database.Subscription{},
+	return r.db.Delete(
+		&database.TopicSubscription{},
 		"recipient = ?",
-		recipient,
-	)
-
-	return db.Error
+		recipient.Recipient(),
+	).Error
 }
 
 func (r *Repo) AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExtended, error) {
@@ -137,40 +151,28 @@ func (r *Repo) AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExten
 			Send()
 	}(time.Now())
 
-	var dbSubs []database.Subscription
-	err := r.db.Find(&dbSubs).Error
+	var topics []database.Topic
+	err := r.db.Preload("Subscriptions").Find(&topics).Error
 	if err != nil {
 		return nil, err
 	}
 
-	// grouping by id+lang is temporary solution until DB refactored
-	type subKey struct {
-		id, lang string
-	}
-
-	subsByKey := make(map[subKey]*domain.SubscriptionExtended)
-
-	for _, s := range dbSubs {
-		key := subKey{s.MangaID, s.Lang}
-		sub := subsByKey[key]
-		if sub == nil {
-			sub = &domain.SubscriptionExtended{
-				Subscription: domain.Subscription{
-					MangaID:    s.MangaID,
-					MangaTitle: s.MangaTitle,
-					Language:   s.Lang,
-				},
-				UpdatedAt: s.UpdatedAt,
-			}
-			subsByKey[key] = sub
+	result := make([]domain.SubscriptionExtended, 0, len(topics))
+	for _, t := range topics {
+		recs := make([]domain.Recipient, 0, len(t.Subscriptions))
+		for _, s := range t.Subscriptions {
+			recs = append(recs, domain.Recipient(s.Recipient))
 		}
 
-		sub.Recipients = append(sub.Recipients, domain.Recipient(s.Recipient))
-	}
-
-	result := make([]domain.SubscriptionExtended, 0, len(subsByKey))
-	for _, sub := range subsByKey {
-		result = append(result, *sub)
+		result = append(result, domain.SubscriptionExtended{
+			Subscription: domain.Subscription{
+				MangaID:    t.MangaID,
+				MangaTitle: t.Title,
+				Language:   t.Lang,
+			},
+			UpdatedAt:  t.UpdatedAt,
+			Recipients: recs,
+		})
 	}
 
 	return result, nil

@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+const connectionAttempts = 3
+
 func New(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 	conn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
@@ -28,7 +30,7 @@ func New(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 		err error
 	)
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < connectionAttempts; i++ {
 		select {
 		case <-ctx.Done():
 			return nil, fmt.Errorf("interrupted: context is cancelled")
@@ -38,7 +40,7 @@ func New(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 		db, err = gorm.Open(postgres.Open(conn), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent),
 		})
-		if err != nil {
+		if err != nil && i < connectionAttempts-1 {
 			log.Log(ctx, "NewDB").Warn().Msg("Database is unavailable. Trying to reconnect...")
 			time.Sleep(time.Second * 3)
 		}
@@ -48,11 +50,12 @@ func New(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	err = db.AutoMigrate(
-		&Subscription{},
 		&ConversationContext{},
+		&Topic{},
+		&TopicSubscription{},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("migration is failed: %w", err)
 	}
 
 	return db, nil

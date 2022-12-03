@@ -141,7 +141,7 @@ func (s *service) Updates(ctx context.Context) ([]domain.Update, error) {
 			return nil, err
 		}
 
-		err = s.storage.SetSubscriptionLastUpdate(ctx, sub, time.Now().UTC())
+		err = s.storage.SetSubscriptionLastUpdate(ctx, sub.Subscription, time.Now().UTC())
 		if err != nil {
 			return nil, err
 		}

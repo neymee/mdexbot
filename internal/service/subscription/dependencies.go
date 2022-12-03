@@ -33,7 +33,7 @@ type SubscriptionRepo interface {
 	AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExtended, error)
 	SetSubscriptionLastUpdate(
 		ctx context.Context,
-		sub domain.SubscriptionExtended,
+		sub domain.Subscription,
 		updatedAt time.Time,
 	) error
 	DeleteAllSubscriptions(context.Context, domain.Recipient) error
