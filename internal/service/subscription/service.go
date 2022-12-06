@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/neymee/mdexbot/internal/domain"
@@ -127,7 +128,7 @@ func (s *service) Updates(ctx context.Context) ([]domain.Update, error) {
 	for _, sub := range subs {
 		select {
 		case <-ctx.Done():
-			return nil, nil
+			return nil, fmt.Errorf("interrupted: context if cancelled")
 		default:
 		}
 
