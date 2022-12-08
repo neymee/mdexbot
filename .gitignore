@@ -3,6 +3,4 @@
 /config.json
 
 deployments/release
-deployments/data/grafana_data
-deployments/data/prometheus_data
-deployments/data/postgres_data
+deployments/.data

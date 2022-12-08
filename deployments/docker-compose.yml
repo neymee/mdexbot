@@ -4,7 +4,7 @@ services:
   db:
     image: postgres
     volumes:
-      - ./data/postgres_data:/var/lib/postgresql/data/pgdata
+      - ./.data/postgres_data:/var/lib/postgresql/data/pgdata
     environment:
       POSTGRES_DB: mdex-bot-db
       POSTGRES_USER: mdex-bot
@@ -16,7 +16,7 @@ services:
   prometheus:
     image: prom/prometheus
     volumes:
-      - ./data/prometheus_data:/prometheus
+      - ./.data/prometheus_data:/prometheus
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - monitoring
@@ -26,7 +26,7 @@ services:
   grafana:
     image: grafana/grafana-oss
     volumes:
-      - ./data/grafana_data:/var/lib/grafana
+      - ./.data/grafana_data:/var/lib/grafana
     ports:
       - 3000:3000
     networks:
