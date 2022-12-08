@@ -40,6 +40,7 @@ func Run(ctx context.Context) {
 	err = bot.Start(ctx, cfg, s)
 	if err != nil {
 		log.Error(ctx, method, err).Send()
+		return
 	}
 
 	go handlePrometheusMetrics(ctx)
