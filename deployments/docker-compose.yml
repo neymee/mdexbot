@@ -3,31 +3,34 @@ version: '3.1'
 services:
   db:
     image: postgres
+    volumes:
+      - ./data/postgres_data:/var/lib/postgresql/data/pgdata
     environment:
       POSTGRES_DB: mdex-bot-db
       POSTGRES_USER: mdex-bot
       POSTGRES_PASSWORD: pwd123
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - 5432:5432
 
   prometheus:
     image: prom/prometheus
     volumes:
-      - ./prometheus_data/:/prometheus/
+      - ./data/prometheus_data:/prometheus
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
-      - monitor-net
+      - monitoring
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   grafana:
     image: grafana/grafana-oss
     volumes:
-      - ./grafana_data:/var/lib/grafana
+      - ./data/grafana_data:/var/lib/grafana
     ports:
       - 3000:3000
     networks:
-      - monitor-net
+      - monitoring
 
 networks:
-  monitor-net: {}
+  monitoring: {}
