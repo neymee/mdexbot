@@ -35,7 +35,11 @@ func Run(ctx context.Context) {
 	r := repo.New(db)
 	s := service.New(r.MDex, r.Storage, r.Storage)
 
-	bot.Start(ctx, cfg, s)
+	err = bot.Start(ctx, cfg, s)
+	if err != nil {
+		log.Error(ctx, method, err).Send()
+	}
+
 	log.Log(ctx, method).Info().Msg("App started")
 
 	<-ctx.Done()
