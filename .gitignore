@@ -3,3 +3,5 @@
 /config.json
 
 deployments/release
+deployments/grafana_data
+deployments/prometheus_data
