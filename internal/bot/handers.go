@@ -8,6 +8,7 @@ import (
 	"github.com/neymee/mdexbot/internal/bot/lang"
 	"github.com/neymee/mdexbot/internal/domain"
 	"github.com/neymee/mdexbot/internal/log"
+	"github.com/neymee/mdexbot/internal/metrics"
 	"github.com/neymee/mdexbot/internal/service"
 	"github.com/neymee/mdexbot/internal/service/subscription"
 	"gopkg.in/telebot.v3"
@@ -78,8 +79,13 @@ func middlewares(method Command) []telebot.MiddlewareFunc {
 			// duration
 			return func(c telebot.Context) error {
 				defer func(start time.Time) {
+					duration := time.Since(start)
+
+					metrics.CommandDuration(method.String()).
+						Observe(duration.Seconds())
+
 					log.Log(reqCtx(c), method.String()).Trace().
-						Dur("duration", time.Since(start)).
+						Dur("duration", duration).
 						Int64("chat_id", c.Chat().ID).
 						Msg("Request processed")
 				}(time.Now())

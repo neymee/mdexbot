@@ -2,15 +2,14 @@ package app
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/neymee/mdexbot/internal/bot"
 	"github.com/neymee/mdexbot/internal/config"
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/log"
+	"github.com/neymee/mdexbot/internal/metrics"
 	"github.com/neymee/mdexbot/internal/repo"
 	"github.com/neymee/mdexbot/internal/service"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func Run(ctx context.Context) {
@@ -43,7 +42,7 @@ func Run(ctx context.Context) {
 		return
 	}
 
-	go handlePrometheusMetrics(ctx)
+	go metrics.HandleHTTP(ctx)
 
 	log.Log(ctx, method).Info().Msg("App started")
 
@@ -51,12 +50,4 @@ func Run(ctx context.Context) {
 
 	log.Log(ctx, method).Info().Msg("App is stopping...")
 	bot.Stop()
-}
-
-func handlePrometheusMetrics(ctx context.Context) {
-	http.Handle("/metrics", promhttp.Handler())
-	err := http.ListenAndServe(":2112", nil)
-	if err != nil {
-		log.Log(ctx, "app.handlePrometheusMetrics").Err(err).Send()
-	}
 }
