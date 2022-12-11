@@ -11,6 +11,12 @@ import (
 )
 
 var (
+	MessageCounter = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "mdexbot",
+		Name:      "message_count_total",
+		Help:      "The total number of sent messages",
+	})
+
 	commandDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
 		Namespace: "mdexbot",
 		Name:      "command_duration_seconds",
@@ -22,12 +28,6 @@ var (
 		Name:      "http_req_duration_seconds",
 		Help:      "The duration of http requests",
 	}, []string{"api"})
-
-	MessageCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "mdexbot",
-		Name:      "message_count_total",
-		Help:      "The total number of sent messages",
-	})
 )
 
 func HandleHTTP(ctx context.Context) {

@@ -82,7 +82,7 @@ func (r *Repo) LastChapters(
 ) ([]domain.Chapter, error) {
 	defer func(start time.Time) {
 		duration := time.Since(start)
-		metrics.HTTPDuration(fmt.Sprintf(apiGetManga, "*")).Observe(duration.Seconds())
+		metrics.HTTPDuration(fmt.Sprintf(apiGetMangaFeed, "*")).Observe(duration.Seconds())
 		log.Log(ctx, "mdex.LastChapters").Trace().
 			Dur("duration", duration).
 			Str("manga_id", mangaID).
