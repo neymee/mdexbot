@@ -10,14 +10,23 @@ import (
 
 	"github.com/neymee/mdexbot/internal/domain"
 	"github.com/neymee/mdexbot/internal/log"
+	"github.com/neymee/mdexbot/internal/metrics"
 	"github.com/neymee/mdexbot/internal/service/subscription"
 )
 
 const (
 	urlBase         = "https://api.mangadex.org"
-	urlGetManga     = urlBase + "/manga/%s"
-	urlGetMangaFeed = urlBase + "/manga/%s/feed"
+	apiGetManga     = "/manga/%s"
+	apiGetMangaFeed = "/manga/%s/feed"
 )
+
+func urlGetManga(id string) string {
+	return urlBase + fmt.Sprintf(apiGetManga, id)
+}
+
+func urlGetMangaFeed(id string) string {
+	return urlBase + fmt.Sprintf(apiGetMangaFeed, id)
+}
 
 type Repo struct{}
 
@@ -29,15 +38,17 @@ func New() *Repo {
 
 func (r *Repo) Manga(ctx context.Context, id string) (domain.Manga, error) {
 	defer func(start time.Time) {
+		duration := time.Since(start)
+		metrics.HTTPDuration(fmt.Sprintf(apiGetManga, "*")).Observe(duration.Seconds())
 		log.Log(ctx, "mdex.Manga").Trace().
-			Dur("duration", time.Since(start)).
+			Dur("duration", duration).
 			Str("id", id).
 			Send()
 	}(time.Now())
 
 	var result domain.Manga
 
-	u := fmt.Sprintf(urlGetManga, id)
+	u := urlGetManga(id)
 	resp, err := http.Get(u)
 	if err != nil {
 		return result, err
@@ -70,15 +81,17 @@ func (r *Repo) LastChapters(
 	publishedSince *time.Time,
 ) ([]domain.Chapter, error) {
 	defer func(start time.Time) {
+		duration := time.Since(start)
+		metrics.HTTPDuration(fmt.Sprintf(apiGetManga, "*")).Observe(duration.Seconds())
 		log.Log(ctx, "mdex.LastChapters").Trace().
-			Dur("duration", time.Since(start)).
+			Dur("duration", duration).
 			Str("manga_id", mangaID).
 			Interface("lang", lang).
 			Interface("published_since", publishedSince).
 			Send()
 	}(time.Now())
 
-	u, err := url.Parse(fmt.Sprintf(urlGetMangaFeed, mangaID))
+	u, err := url.Parse(urlGetMangaFeed(mangaID))
 	if err != nil {
 		return nil, err
 	}
