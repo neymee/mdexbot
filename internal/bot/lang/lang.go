@@ -28,7 +28,7 @@ const (
 	unsubscribeNoSubs      = "You don't have any active subscriptions."
 	unsubscribeChooseSub   = "Choose subscription you want to delete:"
 	unsubscribeConfirmed   = "OK, you will not be longer notified about [%s] <b><i>%s</i></b> updates."
-	unsubscribeNotFollowed = "You're already unsubscribed from [%s] <b><i>%s</i></b>. Call /unsubscribe again to get actual follows list."
+	unsubscribeNotFollowed = "You're already unsubscribed from this follow. Call /unsubscribe again to get actual follows list."
 
 	newChapterSingle = "[%s] <b><i>%s</i></b>\n\nNew chapter published: <b>%s</b>"
 	newChapterMulti  = "[%s] <b><i>%s</i></b>\n\n%d new chapters published!"
@@ -103,10 +103,8 @@ func UnsubscribeConfirmed(title string, lang string) string {
 	return fmt.Sprintf(unsubscribeConfirmed, langEscaped, titleEscaped)
 }
 
-func UnsubscribeNotFollowed(title string, lang string) string {
-	titleEscaped := html.EscapeString(title)
-	langEscaped := html.EscapeString(lang)
-	return fmt.Sprintf(unsubscribeNotFollowed, langEscaped, titleEscaped)
+func UnsubscribeNotFollowed() string {
+	return unsubscribeNotFollowed
 }
 
 func NewChapterSingle(title, lang, chapterNum, chapterTitle, volumeNum string) string {

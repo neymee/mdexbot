@@ -239,7 +239,9 @@ func onUnsubscribeBtn(s *service.Services) telebot.HandlerFunc {
 		}
 
 		sub, err := s.Subscription.Unsubscribe(ctx, rec, mangaID, mangaLang)
-		if err != nil {
+		if errors.Is(err, subscription.ErrNoSuchSubscription) {
+			return send(ctx, rec, lang.UnsubscribeNotFollowed())
+		} else if err != nil {
 			return InternalError(err)
 		}
 
