@@ -6,6 +6,7 @@ import (
 
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/errors"
 	"github.com/neymee/mdexbot/internal/log"
 	"gorm.io/gorm/clause"
 )
@@ -23,7 +24,7 @@ func (r *Repo) ConversationContext(ctx context.Context, recipient domain.Recipie
 	if res.RowsAffected == 0 {
 		return "", nil
 	} else if res.Error != nil {
-		return "", res.Error
+		return "", errors.DatabaseError{Err: res.Error}
 	}
 	return convCtx.Command, nil
 }
@@ -36,7 +37,7 @@ func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Reci
 			Send()
 	}(time.Now())
 
-	db := r.db.Clauses(
+	err := r.db.Clauses(
 		clause.OnConflict{
 			Columns: []clause.Column{{Name: "recipient"}},
 			DoUpdates: clause.Assignments(
@@ -48,9 +49,12 @@ func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Reci
 	).Create(&database.ConversationContext{
 		Recipient: recipient.Recipient(),
 		Command:   cmd,
-	})
+	}).Error
 
-	return db.Error
+	if err != nil {
+		return errors.DatabaseError{Err: err}
+	}
+	return nil
 }
 
 func (r *Repo) DeleteConversationContext(ctx context.Context, recipient domain.Recipient) error {
@@ -61,5 +65,9 @@ func (r *Repo) DeleteConversationContext(ctx context.Context, recipient domain.R
 			Send()
 	}(time.Now())
 
-	return r.db.Delete(&database.ConversationContext{}, "recipient = ?", recipient).Error
+	err := r.db.Delete(&database.ConversationContext{}, "recipient = ?", recipient).Error
+	if err != nil {
+		return errors.DatabaseError{Err: err}
+	}
+	return nil
 }

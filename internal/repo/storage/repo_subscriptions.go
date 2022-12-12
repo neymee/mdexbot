@@ -6,6 +6,7 @@ import (
 
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/errors"
 	"github.com/neymee/mdexbot/internal/log"
 )
 
@@ -29,7 +30,7 @@ func (r *Repo) SetUserSubscription(
 
 	err := r.db.FirstOrCreate(&topic, &topic).Error
 	if err != nil {
-		return err
+		return errors.DatabaseError{Err: err}
 	}
 
 	topicSub := database.TopicSubscription{
@@ -37,7 +38,11 @@ func (r *Repo) SetUserSubscription(
 		Recipient: user.Recipient(),
 	}
 
-	return r.db.Create(&topicSub).Error
+	err = r.db.Create(&topicSub).Error
+	if err != nil {
+		return errors.DatabaseError{Err: err}
+	}
+	return nil
 }
 
 func (r *Repo) SetSubscriptionLastUpdate(
@@ -60,7 +65,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
 		Error
 	if err != nil {
-		return err
+		return errors.DatabaseError{Err: err}
 	}
 
 	for _, c := range chapters {
@@ -70,13 +75,18 @@ func (r *Repo) SetSubscriptionLastUpdate(
 			Volume:  c.Volume,
 		}).Error
 		if err != nil {
-			return err
+			return errors.DatabaseError{Err: err}
 		}
 	}
 
-	return r.db.Model(&database.Topic{}).
+	err = r.db.Model(&database.Topic{}).
 		Where("id = ?", topic.ID).
 		Update("updated_at", updatedAt).Error
+
+	if err != nil {
+		return errors.DatabaseError{Err: err}
+	}
+	return nil
 }
 
 func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, chapter domain.Chapter) (bool, error) {
@@ -94,7 +104,7 @@ func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, c
 		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
 		Error
 	if err != nil {
-		return false, err
+		return false, errors.DatabaseError{Err: err}
 	}
 
 	res := r.db.First(
@@ -103,7 +113,7 @@ func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, c
 		topic.ID, chapter.Chapter, chapter.Volume,
 	)
 	if res.Error != nil {
-		return false, err
+		return false, errors.DatabaseError{Err: err}
 	}
 
 	return res.RowsAffected > 0, nil
@@ -126,7 +136,7 @@ func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient
 		recipient.Recipient(),
 	).Find(&topics).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.DatabaseError{Err: err}
 	}
 
 	subs := make([]domain.Subscription, 0, len(topics))
@@ -160,7 +170,7 @@ func (r *Repo) DeleteUserSubscription(
 		Preload("Subscriptions").
 		Find(&topic, "manga_id = ? AND lang = ?", mangaID, lang).Error
 	if err != nil {
-		return err
+		return errors.DatabaseError{Err: err}
 	}
 
 	err = r.db.Delete(
@@ -170,11 +180,12 @@ func (r *Repo) DeleteUserSubscription(
 		topic.ID,
 	).Error
 	if err != nil {
-		return err
+		return errors.DatabaseError{Err: err}
 	}
 
 	if len(topic.Subscriptions) == 1 && topic.Subscriptions[0].Recipient == recipient.Recipient() {
-		return r.db.Delete(&topic).Error
+		err := r.db.Delete(&topic).Error
+		return errors.DatabaseError{Err: err}
 	}
 
 	return nil
@@ -188,11 +199,16 @@ func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Reci
 			Send()
 	}(time.Now())
 
-	return r.db.Delete(
+	err := r.db.Delete(
 		&database.TopicSubscription{},
 		"recipient = ?",
 		recipient.Recipient(),
 	).Error
+
+	if err != nil {
+		return errors.DatabaseError{Err: err}
+	}
+	return nil
 }
 
 func (r *Repo) AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExtended, error) {
@@ -205,7 +221,7 @@ func (r *Repo) AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExten
 	var topics []database.Topic
 	err := r.db.Preload("Subscriptions").Find(&topics).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.DatabaseError{Err: err}
 	}
 
 	result := make([]domain.SubscriptionExtended, 0, len(topics))

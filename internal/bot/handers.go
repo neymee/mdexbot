@@ -36,6 +36,7 @@ func initHandlers(bot *telebot.Bot, s *service.Services) {
 			Msg("Error during processing request")
 
 		if _, ok := err.(InternalError); ok {
+			metrics.ErrorsCounter(err).Inc()
 			send(reqCtx(c), domain.RecipientFromInt64(c.Chat().ID), lang.ErrInternalError())
 		}
 	}

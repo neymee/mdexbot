@@ -2,8 +2,10 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
+	werrors "github.com/neymee/mdexbot/internal/errors"
 	"github.com/neymee/mdexbot/internal/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -16,6 +18,12 @@ var (
 		Name:      "message_count_total",
 		Help:      "The total number of sent messages",
 	})
+
+	errorsCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "mdexbot",
+		Name:      "errors_count_total",
+		Help:      "The total number of errors",
+	}, []string{"error"})
 
 	commandDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
 		Namespace: "mdexbot",
@@ -55,5 +63,24 @@ func CommandDuration(cmd string) prometheus.Observer {
 func HTTPDuration(api string) prometheus.Observer {
 	return httpDuration.With(prometheus.Labels{
 		"api": api,
+	})
+}
+
+func ErrorsCounter(err error) prometheus.Counter {
+	var errLabel string
+
+	switch {
+	case errors.As(err, &werrors.DatabaseError{}):
+		errLabel = "database"
+	case errors.As(err, &werrors.FailedHTTPReqError{}):
+		errLabel = "http"
+	case errors.As(err, &werrors.TelegramError{}):
+		errLabel = "telegram"
+	default:
+		errLabel = "unknown"
+	}
+
+	return errorsCounter.With(prometheus.Labels{
+		"error": errLabel,
 	})
 }

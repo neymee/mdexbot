@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/errors"
 	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/metrics"
 	"github.com/neymee/mdexbot/internal/service/subscription"
@@ -51,11 +52,11 @@ func (r *Repo) Manga(ctx context.Context, id string) (domain.Manga, error) {
 	u := urlGetManga(id)
 	resp, err := http.Get(u)
 	if err != nil {
-		return result, err
+		return result, errors.FailedHTTPReqError{Err: err}
 	}
 
 	if resp.StatusCode != 200 {
-		return result, fmt.Errorf("request failed with status %d", resp.StatusCode)
+		return result, errors.FailedHTTPReqError{Err: fmt.Errorf("request failed with status %d", resp.StatusCode)}
 	}
 
 	var manga *apiResponse[apiManga]
@@ -112,11 +113,11 @@ func (r *Repo) LastChapters(
 
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return nil, err
+		return nil, errors.FailedHTTPReqError{Err: err}
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
+		return nil, errors.FailedHTTPReqError{Err: fmt.Errorf("request failed with status %d", resp.StatusCode)}
 	}
 
 	var feeds *apiResponse[[]apiMangaFeedItem]

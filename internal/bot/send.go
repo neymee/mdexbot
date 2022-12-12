@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/errors"
 	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/metrics"
 	"gopkg.in/telebot.v3"
@@ -33,6 +34,7 @@ func send(ctx context.Context, to domain.Recipient, text string, options ...send
 
 	_, err := bot.Send(to, text, opt)
 	if err != nil {
+		metrics.ErrorsCounter(errors.TelegramError{Err: err}).Inc()
 		return err
 	}
 
