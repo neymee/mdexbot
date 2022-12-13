@@ -354,7 +354,9 @@ func TestUpdates_Success(t *testing.T) {
 		Recipients:   []domain.Recipient{user},
 		UpdatedAt:    time.Date(2022, 12, 1, 0, 0, 0, 0, time.Local),
 	}
-	chap1 := domain.Chapter{ID: "ch_1"}
+	chap1 := domain.Chapter{ID: "ch_1", Volume: "1", Chapter: "1", Title: "chap1"}
+	chap1dup := domain.Chapter{ID: "ch_1", Volume: "1", Chapter: "1", Title: "chap1 dup"} // should be filtered
+
 	expUpdates := []domain.Update{
 		{
 			MangaID:     sub1.MangaID,
@@ -370,8 +372,9 @@ func TestUpdates_Success(t *testing.T) {
 	s := New(mdexApi, subRepo)
 
 	subRepo.On("AllSubscriptions", ctx).Return([]domain.SubscriptionExtended{sub1}, nil)
-	mdexApi.On("LastChapters", ctx, sub1.MangaID, (*string)(nil), &sub1.UpdatedAt).Return([]domain.Chapter{chap1}, nil)
+	mdexApi.On("LastChapters", ctx, sub1.MangaID, (*string)(nil), &sub1.UpdatedAt).Return([]domain.Chapter{chap1, chap1dup}, nil)
 	subRepo.On("IsChapterNotified", ctx, sub1.Subscription, chap1).Return(false, nil)
+	subRepo.On("IsChapterNotified", ctx, sub1.Subscription, chap1dup).Return(false, nil)
 	subRepo.On("SetSubscriptionLastUpdate", ctx, sub1.Subscription, mock.Anything, []domain.Chapter{chap1}).Return(nil)
 	updates, err := s.Updates(ctx)
 	assert.NoError(t, err)
