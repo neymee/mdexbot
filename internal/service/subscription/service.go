@@ -163,7 +163,7 @@ func (s *service) Updates(ctx context.Context) ([]domain.Update, error) {
 }
 
 // newChapters returns chapters published since last subscription update.
-// Chapters that have already been notified will be filtered. 
+// Chapters that have already been notified will be filtered.
 func (s *service) newChapters(ctx context.Context, sub domain.SubscriptionExtended) ([]domain.Chapter, error) {
 	var lang *string
 	if sub.Language != "any" {
@@ -176,14 +176,21 @@ func (s *service) newChapters(ctx context.Context, sub domain.SubscriptionExtend
 	}
 
 	// filter chapters that have already been notified
+	type key struct{ vol, ch string }
+	chaptersAdded := map[key]struct{}{}
 	chapters := []domain.Chapter{}
 	for _, ch := range lastChapters {
 		isNotified, err := s.storage.IsChapterNotified(ctx, sub.Subscription, ch)
 		if err != nil {
 			return nil, err
 		}
-		if !isNotified {
+
+		key := key{vol: ch.Volume, ch: ch.Chapter}
+		_, isAdded := chaptersAdded[key]
+
+		if !isNotified && !isAdded {
 			chapters = append(chapters, ch)
+			chaptersAdded[key] = struct{}{}
 		}
 	}
 	return chapters, nil

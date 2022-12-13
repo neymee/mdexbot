@@ -2,14 +2,12 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/domain"
 	werrors "github.com/neymee/mdexbot/internal/errors"
 	"github.com/neymee/mdexbot/internal/log"
-	"gorm.io/gorm"
 )
 
 func (r *Repo) SetUserSubscription(
@@ -109,18 +107,18 @@ func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, c
 		return false, werrors.DatabaseError{Err: err}
 	}
 
-	res := r.db.First(
-		&database.NotifiedChapter{},
-		"topic_id = ? AND chapter = ? AND volume = ?",
-		topic.ID, chapter.Chapter, chapter.Volume,
-	)
-	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-		return false, nil
-	} else if res.Error != nil {
-		return false, werrors.DatabaseError{Err: res.Error}
+	var exists bool
+	err = r.db.Model(&database.NotifiedChapter{}).
+		Select("count(*) > 0").
+		Where("topic_id = ? AND chapter = ? AND volume = ?", topic.ID, chapter.Chapter, chapter.Volume).
+		Find(&exists).
+		Error
+
+	if err != nil {
+		return false, werrors.DatabaseError{Err: err}
 	}
 
-	return true, nil
+	return exists, nil
 }
 
 func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient) ([]domain.Subscription, error) {
