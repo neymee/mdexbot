@@ -2,12 +2,14 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/neymee/mdexbot/internal/database"
 	"github.com/neymee/mdexbot/internal/domain"
-	"github.com/neymee/mdexbot/internal/errors"
+	werrors "github.com/neymee/mdexbot/internal/errors"
 	"github.com/neymee/mdexbot/internal/log"
+	"gorm.io/gorm"
 )
 
 func (r *Repo) SetUserSubscription(
@@ -30,7 +32,7 @@ func (r *Repo) SetUserSubscription(
 
 	err := r.db.FirstOrCreate(&topic, &topic).Error
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 
 	topicSub := database.TopicSubscription{
@@ -40,7 +42,7 @@ func (r *Repo) SetUserSubscription(
 
 	err = r.db.Create(&topicSub).Error
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 	return nil
 }
@@ -65,7 +67,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
 		Error
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 
 	for _, c := range chapters {
@@ -75,7 +77,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 			Volume:  c.Volume,
 		}).Error
 		if err != nil {
-			return errors.DatabaseError{Err: err}
+			return werrors.DatabaseError{Err: err}
 		}
 	}
 
@@ -84,7 +86,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 		Update("updated_at", updatedAt).Error
 
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 	return nil
 }
@@ -104,7 +106,7 @@ func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, c
 		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
 		Error
 	if err != nil {
-		return false, errors.DatabaseError{Err: err}
+		return false, werrors.DatabaseError{Err: err}
 	}
 
 	res := r.db.First(
@@ -112,11 +114,13 @@ func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, c
 		"topic_id = ? AND chapter = ? AND volume = ?",
 		topic.ID, chapter.Chapter, chapter.Volume,
 	)
-	if res.Error != nil {
-		return false, errors.DatabaseError{Err: err}
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return false, nil
+	} else if res.Error != nil {
+		return false, werrors.DatabaseError{Err: res.Error}
 	}
 
-	return res.RowsAffected > 0, nil
+	return true, nil
 }
 
 func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient) ([]domain.Subscription, error) {
@@ -136,7 +140,7 @@ func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient
 		recipient.Recipient(),
 	).Find(&topics).Error
 	if err != nil {
-		return nil, errors.DatabaseError{Err: err}
+		return nil, werrors.DatabaseError{Err: err}
 	}
 
 	subs := make([]domain.Subscription, 0, len(topics))
@@ -170,7 +174,7 @@ func (r *Repo) DeleteUserSubscription(
 		Preload("Subscriptions").
 		Find(&topic, "manga_id = ? AND lang = ?", mangaID, lang).Error
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 
 	err = r.db.Delete(
@@ -180,12 +184,12 @@ func (r *Repo) DeleteUserSubscription(
 		topic.ID,
 	).Error
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 
 	if len(topic.Subscriptions) == 1 && topic.Subscriptions[0].Recipient == recipient.Recipient() {
 		err := r.db.Delete(&topic).Error
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 
 	return nil
@@ -206,7 +210,7 @@ func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Reci
 	).Error
 
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return werrors.DatabaseError{Err: err}
 	}
 	return nil
 }
@@ -221,7 +225,7 @@ func (r *Repo) AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExten
 	var topics []database.Topic
 	err := r.db.Preload("Subscriptions").Find(&topics).Error
 	if err != nil {
-		return nil, errors.DatabaseError{Err: err}
+		return nil, werrors.DatabaseError{Err: err}
 	}
 
 	result := make([]domain.SubscriptionExtended, 0, len(topics))
