@@ -14,10 +14,12 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
+const updatesCheckPeriod = time.Minute * 15
+
 func runUpdatesChecker(ctx context.Context, s *service.Services) {
 	checkUpdates(ctx, s)
 
-	t := time.NewTicker(time.Hour)
+	t := time.NewTicker(updatesCheckPeriod)
 	for {
 		select {
 		case <-t.C:
