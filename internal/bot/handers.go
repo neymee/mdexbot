@@ -135,7 +135,9 @@ func onText(s *service.Services) telebot.HandlerFunc {
 		}
 
 		manga, err := s.Subscription.Manga(ctx, mangaID)
-		if err != nil {
+		if errors.Is(err, subscription.ErrMangaNotFound) {
+			return send(ctx, rec, lang.SubscribeErrMangaNotFound())
+		} else if err != nil {
 			return InternalError(err)
 		}
 

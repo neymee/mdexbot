@@ -55,7 +55,9 @@ func (r *Repo) Manga(ctx context.Context, id string) (domain.Manga, error) {
 		return result, errors.FailedHTTPReqError{Err: err}
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode == 404 {
+		return result, subscription.ErrMangaNotFound
+	} else if resp.StatusCode != 200 {
 		return result, errors.FailedHTTPReqError{Err: fmt.Errorf("request failed with status %d", resp.StatusCode)}
 	}
 
@@ -116,7 +118,9 @@ func (r *Repo) LastChapters(
 		return nil, errors.FailedHTTPReqError{Err: err}
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode == 404 {
+		return nil, subscription.ErrMangaNotFound
+	} else if resp.StatusCode != 200 {
 		return nil, errors.FailedHTTPReqError{Err: fmt.Errorf("request failed with status %d", resp.StatusCode)}
 	}
 

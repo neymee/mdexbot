@@ -4,6 +4,7 @@ import "fmt"
 
 var (
 	ErrNoSuchSubscription = fmt.Errorf("no such subscription")
+	ErrMangaNotFound      = fmt.Errorf("manga not found")
 )
 
 type AlreadySubscribedError struct {

@@ -22,6 +22,7 @@ const (
 	subscribeChooseLanguage    = "<b><i>%s</i></b>\n\nChoose the language you want to track:"
 	subscribeConfirmed         = "Great! You will receive a message when a new chapter of [%s] <b><i>%s</i></b> is published."
 	subscribeAllreadyFollowing = "You're already following [%s] <b><i>%s</i></b>."
+	subscribeMangaNotFound     = "The link looks valid, but the manga not found. Please make sure the link is correct."
 
 	subscribeErrInvalidLink = "Link \"%s\" is not recognized. Please send a valid link to a manga page on mangadex.org.\n\nFor example: https://mangadex.org/title/d8a959f7-648e-4c8d-8f23-f1f3f8e129f3/one-punch-man"
 
@@ -87,6 +88,10 @@ func SubscribeAllreadyFollowing(title string, lang string) string {
 func SubscribeErrInvalidLink(link string) string {
 	linkEscaped := html.EscapeString(link)
 	return fmt.Sprintf(subscribeErrInvalidLink, linkEscaped)
+}
+
+func SubscribeErrMangaNotFound() string {
+	return subscribeMangaNotFound
 }
 
 func UnsubscribeNoSubs() string {

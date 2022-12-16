@@ -2,10 +2,12 @@ package subscription
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/neymee/mdexbot/internal/domain"
+	"github.com/neymee/mdexbot/internal/log"
 )
 
 type Service interface {
@@ -128,12 +130,17 @@ func (s *service) Updates(ctx context.Context) ([]domain.Update, error) {
 	for _, sub := range subs {
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("interrupted: context if cancelled")
+			return nil, fmt.Errorf("interrupted: context is cancelled")
 		default:
 		}
 
 		chapters, err := s.newChapters(ctx, sub)
-		if err != nil {
+		if errors.Is(err, ErrMangaNotFound) {
+			log.Log(ctx, "subscription.Updates").Warn().
+				Str("manga_id", sub.MangaID).
+				Msg("Manga not found, subscription is skipped")
+			continue
+		} else if err != nil {
 			return nil, err
 		}
 
