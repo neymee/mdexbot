@@ -6,7 +6,10 @@ type FailedHTTPReqError struct {
 }
 
 func (e FailedHTTPReqError) Error() string {
-	return e.Err.Error()
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "Unknown http request error"
 }
 
 // DatabaseError wraps gorm error
@@ -15,7 +18,10 @@ type DatabaseError struct {
 }
 
 func (e DatabaseError) Error() string {
-	return e.Err.Error()
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "Unknown database error"
 }
 
 // TelegramError wraps message sending error
@@ -24,5 +30,8 @@ type TelegramError struct {
 }
 
 func (e TelegramError) Error() string {
-	return e.Err.Error()
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "Unknown telegram error"
 }

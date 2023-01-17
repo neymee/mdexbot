@@ -187,7 +187,9 @@ func (r *Repo) DeleteUserSubscription(
 
 	if len(topic.Subscriptions) == 1 && topic.Subscriptions[0].Recipient == recipient.Recipient() {
 		err := r.db.Delete(&topic).Error
-		return werrors.DatabaseError{Err: err}
+		if err != nil {
+			return werrors.DatabaseError{Err: err}
+		}
 	}
 
 	return nil
