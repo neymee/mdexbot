@@ -183,7 +183,7 @@ func onSubscribeBtn(s *service.Services) telebot.HandlerFunc {
 
 		sub, err := s.Subscription.Subscribe(ctx, rec, mangaID, mangaLang)
 		if alsErr := new(subscription.AlreadySubscribedError); errors.As(err, &alsErr) {
-			return send(ctx, rec, lang.SubscribeAllreadyFollowing(alsErr.Manga, alsErr.Lang))
+			return send(ctx, rec, lang.SubscribeAllreadyFollowing(alsErr.Manga, lang.GetFlagOrLang(alsErr.Lang)))
 		} else if err != nil {
 			return InternalError(err)
 		}
