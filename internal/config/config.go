@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"io"
 	"os"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -44,11 +43,6 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	cfgJson, err := io.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
 	var cfg *Config
-	return cfg, json.Unmarshal(cfgJson, &cfg)
+	return cfg, json.NewDecoder(file).Decode(&cfg)
 }
