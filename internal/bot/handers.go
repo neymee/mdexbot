@@ -14,8 +14,6 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
-type InternalError error
-
 func initHandlers(bot *telebot.Bot, s *service.Services) {
 	bot.Handle(CmdStart.Endpoint(), onStart(s), middlewares(CmdStart)...)
 
@@ -28,18 +26,6 @@ func initHandlers(bot *telebot.Bot, s *service.Services) {
 
 	bot.Handle(CmdList.Endpoint(), onList(s), middlewares(CmdList)...)
 	bot.Handle(CmdCancel.Endpoint(), onCancel(s), middlewares(CmdCancel)...)
-
-	bot.OnError = func(err error, c telebot.Context) {
-		log.Error(reqCtx(c), "bot.OnError", err).
-			Int64("recipient", c.Chat().ID).
-			Int("message_id", c.Message().ID).
-			Msg("Error during processing request")
-
-		if _, ok := err.(InternalError); ok {
-			metrics.ErrorsCounter(err).Inc()
-			send(reqCtx(c), domain.RecipientFromInt64(c.Chat().ID), lang.ErrInternalError())
-		}
-	}
 }
 
 func middlewares(method Command) []telebot.MiddlewareFunc {
@@ -122,7 +108,7 @@ func onText(s *service.Services) telebot.HandlerFunc {
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		if cmd != CmdSubscribe.String() {
@@ -138,12 +124,12 @@ func onText(s *service.Services) telebot.HandlerFunc {
 		if errors.Is(err, subscription.ErrMangaNotFound) {
 			return send(ctx, rec, lang.SubscribeErrMangaNotFound())
 		} else if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		err = s.Conversation.DeleteConversationContext(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		keyboard := buildLanguageButtons(manga)
@@ -164,7 +150,7 @@ func onSubscribe(s *service.Services) telebot.HandlerFunc {
 
 		err := s.Conversation.SetConversationContext(ctx, rec, CmdSubscribe.String())
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		return send(ctx, rec, lang.SubscribeInit())
@@ -178,14 +164,14 @@ func onSubscribeBtn(s *service.Services) telebot.HandlerFunc {
 
 		mangaID, mangaLang, err := parseButtonData(c.Callback().Data)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		sub, err := s.Subscription.Subscribe(ctx, rec, mangaID, mangaLang)
 		if alsErr := new(subscription.AlreadySubscribedError); errors.As(err, &alsErr) {
 			return send(ctx, rec, lang.SubscribeAllreadyFollowing(alsErr.Manga, lang.GetFlagOrLang(alsErr.Lang)))
 		} else if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		return send(
@@ -203,14 +189,14 @@ func onUnsubscribe(s *service.Services) telebot.HandlerFunc {
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		} else if cmd != "" {
 			return send(ctx, rec, lang.ErrWrongContext(cmd))
 		}
 
 		subs, err := s.Subscription.List(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		} else if len(subs) == 0 {
 			return send(ctx, rec, lang.UnsubscribeNoSubs())
 		}
@@ -238,14 +224,14 @@ func onUnsubscribeBtn(s *service.Services) telebot.HandlerFunc {
 
 		mangaID, mangaLang, err := parseButtonData(c.Callback().Data)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		sub, err := s.Subscription.Unsubscribe(ctx, rec, mangaID, mangaLang)
 		if errors.Is(err, subscription.ErrNoSuchSubscription) {
 			return send(ctx, rec, lang.UnsubscribeNotFollowed())
 		} else if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		return send(
@@ -263,14 +249,14 @@ func onList(s *service.Services) telebot.HandlerFunc {
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		} else if cmd != "" {
 			return send(ctx, rec, lang.ErrWrongContext(cmd))
 		}
 
 		subs, err := s.Subscription.List(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		} else if len(subs) == 0 {
 			return send(ctx, rec, lang.ListNoSubs())
 		}
@@ -296,16 +282,29 @@ func onCancel(s *service.Services) telebot.HandlerFunc {
 
 		cmd, err := s.Conversation.ConversationContext(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		} else if cmd == "" {
 			return send(ctx, rec, lang.CancelNoCommands())
 		}
 
 		err = s.Conversation.DeleteConversationContext(ctx, rec)
 		if err != nil {
-			return InternalError(err)
+			return handleInternalError(c, rec, err)
 		}
 
 		return send(ctx, rec, lang.CancelSuccessful(cmd))
 	}
+}
+
+func handleInternalError(c telebot.Context, rec domain.Recipient, err error) error {
+	ctx := reqCtx(c)
+
+	log.Error(ctx, "bot.OnError", err).
+		Int64("recipient", c.Chat().ID).
+		Int("message_id", c.Message().ID).
+		Msg("Error during processing request")
+
+	metrics.ErrorsCounter(err).Inc()
+
+	return send(ctx, rec, lang.ErrInternalError())
 }
