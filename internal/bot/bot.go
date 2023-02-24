@@ -32,7 +32,7 @@ func Start(
 	initHandlers(bot, services)
 
 	go bot.Start()
-	go runUpdatesChecker(ctx, services)
+	go runUpdatesChecker(ctx, cfg, services)
 
 	return nil
 }

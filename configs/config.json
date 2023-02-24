@@ -1,6 +1,7 @@
 {
     "bot": {
-        "token": ""
+        "token": "",
+        "check_period_min": 30
     },
     "db": {
         "host": "localhost",

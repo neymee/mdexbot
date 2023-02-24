@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/neymee/mdexbot/internal/bot/lang"
+	"github.com/neymee/mdexbot/internal/config"
 	"github.com/neymee/mdexbot/internal/domain"
 	"github.com/neymee/mdexbot/internal/log"
 	"github.com/neymee/mdexbot/internal/metrics"
@@ -14,12 +15,11 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
-const updatesCheckPeriod = time.Minute * 15
-
-func runUpdatesChecker(ctx context.Context, s *service.Services) {
+func runUpdatesChecker(ctx context.Context, cfg *config.Config, s *service.Services) {
 	checkUpdates(ctx, s)
 
-	t := time.NewTicker(updatesCheckPeriod)
+	checkPeriod := time.Duration(cfg.Bot.CheckPeriodMin) * time.Minute
+	t := time.NewTicker(checkPeriod)
 	for {
 		select {
 		case <-t.C:

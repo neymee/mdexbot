@@ -14,7 +14,8 @@ type Config struct {
 }
 
 type botConfig struct {
-	Token string `json:"token"`
+	Token          string `json:"token"`
+	CheckPeriodMin int    `json:"check_period_min"`
 }
 
 type dbConfig struct {
@@ -44,5 +45,14 @@ func Load() (*Config, error) {
 	}
 
 	var cfg *Config
-	return cfg, json.NewDecoder(file).Decode(&cfg)
+	err = json.NewDecoder(file).Decode(&cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.Bot.CheckPeriodMin < 1 {
+		cfg.Bot.CheckPeriodMin = 15
+	}
+
+	return cfg, nil
 }
