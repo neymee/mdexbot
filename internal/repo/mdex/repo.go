@@ -52,13 +52,14 @@ func (r *Repo) Manga(ctx context.Context, id string) (domain.Manga, error) {
 	u := urlGetManga(id)
 	resp, err := http.Get(u)
 	if err != nil {
-		return result, errors.FailedHTTPReqError{Err: err}
+		return result, fmt.Errorf("%w: %w", errors.FailedHTTPReqError, err)
 	}
 
 	if resp.StatusCode == 404 {
 		return result, subscription.ErrMangaNotFound
 	} else if resp.StatusCode != 200 {
-		return result, errors.FailedHTTPReqError{Err: fmt.Errorf("request failed with status %d", resp.StatusCode)}
+		err := fmt.Errorf("%w: request failed with status %d", errors.FailedHTTPReqError, resp.StatusCode)
+		return result, err
 	}
 
 	var manga *apiResponse[apiManga]
@@ -115,13 +116,14 @@ func (r *Repo) LastChapters(
 
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return nil, errors.FailedHTTPReqError{Err: err}
+		return nil, fmt.Errorf("%w: %w", errors.FailedHTTPReqError, err)
 	}
 
 	if resp.StatusCode == 404 {
 		return nil, subscription.ErrMangaNotFound
 	} else if resp.StatusCode != 200 {
-		return nil, errors.FailedHTTPReqError{Err: fmt.Errorf("request failed with status %d", resp.StatusCode)}
+		err := fmt.Errorf("%w: request failed with status %d", errors.FailedHTTPReqError, resp.StatusCode)
+		return nil, err
 	}
 
 	var feeds *apiResponse[[]apiMangaFeedItem]

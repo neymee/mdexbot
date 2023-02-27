@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/neymee/mdexbot/internal/database"
@@ -30,7 +31,7 @@ func (r *Repo) SetUserSubscription(
 
 	err := r.db.FirstOrCreate(&topic, &topic).Error
 	if err != nil {
-		return werrors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	topicSub := database.TopicSubscription{
@@ -40,7 +41,7 @@ func (r *Repo) SetUserSubscription(
 
 	err = r.db.Create(&topicSub).Error
 	if err != nil {
-		return werrors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 	return nil
 }
@@ -65,7 +66,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
 		Error
 	if err != nil {
-		return werrors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	for _, c := range chapters {
@@ -75,7 +76,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 			Volume:  c.Volume,
 		}).Error
 		if err != nil {
-			return werrors.DatabaseError{Err: err}
+			return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 		}
 	}
 
@@ -84,7 +85,7 @@ func (r *Repo) SetSubscriptionLastUpdate(
 		Update("updated_at", updatedAt).Error
 
 	if err != nil {
-		return werrors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 	return nil
 }
@@ -104,7 +105,7 @@ func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, c
 		Find(&topic, "manga_id = ? AND lang = ?", sub.MangaID, sub.Language).
 		Error
 	if err != nil {
-		return false, werrors.DatabaseError{Err: err}
+		return false, fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	var exists bool
@@ -115,7 +116,7 @@ func (r *Repo) IsChapterNotified(ctx context.Context, sub domain.Subscription, c
 		Error
 
 	if err != nil {
-		return false, werrors.DatabaseError{Err: err}
+		return false, fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	return exists, nil
@@ -138,7 +139,7 @@ func (r *Repo) UserSubscriptions(ctx context.Context, recipient domain.Recipient
 		recipient.Recipient(),
 	).Find(&topics).Error
 	if err != nil {
-		return nil, werrors.DatabaseError{Err: err}
+		return nil, fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	subs := make([]domain.Subscription, 0, len(topics))
@@ -172,7 +173,7 @@ func (r *Repo) DeleteUserSubscription(
 		Preload("Subscriptions").
 		Find(&topic, "manga_id = ? AND lang = ?", mangaID, lang).Error
 	if err != nil {
-		return werrors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	err = r.db.Delete(
@@ -182,13 +183,13 @@ func (r *Repo) DeleteUserSubscription(
 		topic.ID,
 	).Error
 	if err != nil {
-		return werrors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	if len(topic.Subscriptions) == 1 && topic.Subscriptions[0].Recipient == recipient.Recipient() {
 		err := r.db.Delete(&topic).Error
 		if err != nil {
-			return werrors.DatabaseError{Err: err}
+			return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 		}
 	}
 
@@ -210,7 +211,7 @@ func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Reci
 	).Error
 
 	if err != nil {
-		return werrors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 	return nil
 }
@@ -225,7 +226,7 @@ func (r *Repo) AllSubscriptions(ctx context.Context) ([]domain.SubscriptionExten
 	var topics []database.Topic
 	err := r.db.Preload("Subscriptions").Find(&topics).Error
 	if err != nil {
-		return nil, werrors.DatabaseError{Err: err}
+		return nil, fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
 
 	result := make([]domain.SubscriptionExtended, 0, len(topics))

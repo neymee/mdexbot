@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/neymee/mdexbot/internal/database"
@@ -24,7 +25,7 @@ func (r *Repo) ConversationContext(ctx context.Context, recipient domain.Recipie
 	if res.RowsAffected == 0 {
 		return "", nil
 	} else if res.Error != nil {
-		return "", errors.DatabaseError{Err: res.Error}
+		return "", fmt.Errorf("%w: %w", errors.DatabaseError, res.Error)
 	}
 	return convCtx.Command, nil
 }
@@ -52,7 +53,7 @@ func (r *Repo) SetConversationContext(ctx context.Context, recipient domain.Reci
 	}).Error
 
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", errors.DatabaseError, err)
 	}
 	return nil
 }
@@ -67,7 +68,7 @@ func (r *Repo) DeleteConversationContext(ctx context.Context, recipient domain.R
 
 	err := r.db.Delete(&database.ConversationContext{}, "recipient = ?", recipient).Error
 	if err != nil {
-		return errors.DatabaseError{Err: err}
+		return fmt.Errorf("%w: %w", errors.DatabaseError, err)
 	}
 	return nil
 }

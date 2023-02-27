@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/neymee/mdexbot/internal/domain"
@@ -34,7 +35,7 @@ func send(ctx context.Context, to domain.Recipient, text string, options ...send
 
 	_, err := bot.Send(to, text, opt)
 	if err != nil {
-		metrics.ErrorsCounter(errors.TelegramError{Err: err}).Inc()
+		metrics.ErrorsCounter(fmt.Errorf("%w: %w", errors.TelegramError, err)).Inc()
 		return err
 	}
 

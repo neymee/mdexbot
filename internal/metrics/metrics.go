@@ -70,11 +70,11 @@ func ErrorsCounter(err error) prometheus.Counter {
 	var errLabel string
 
 	switch {
-	case errors.As(err, &werrors.DatabaseError{}):
+	case errors.Is(err, werrors.DatabaseError):
 		errLabel = "database"
-	case errors.As(err, &werrors.FailedHTTPReqError{}):
+	case errors.Is(err, werrors.FailedHTTPReqError):
 		errLabel = "http"
-	case errors.As(err, &werrors.TelegramError{}):
+	case errors.Is(err, werrors.TelegramError):
 		errLabel = "telegram"
 	default:
 		errLabel = "unknown"
