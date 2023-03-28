@@ -1,6 +1,8 @@
 ## About
 A telegram bot that can notify you about new manga chapters on [MangaDex](https://mangadex.org). Can be found on [@mdex_new_chapter_bot](https://t.me/mdex_new_chapter_bot).
 
+![image](https://github.com/neymee/mdexbot/actions/workflows/go.yml/badge.svg)
+
 ## How to run
 1. Go to the [BotFather](https://t.me/BotFather) and create a new bot.
 2. Copy `config.json` from `./config` directory to project root. Fill in the `bot.token` field with your bot's token.
