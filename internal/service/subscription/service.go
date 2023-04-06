@@ -10,6 +10,10 @@ import (
 	"github.com/neymee/mdexbot/internal/log"
 )
 
+const (
+	PublishedSinceDelay = time.Minute * 3
+)
+
 type Service interface {
 	Manga(ctx context.Context, mangaID string) (domain.Manga, error)
 	List(ctx context.Context, rec domain.Recipient) ([]domain.Subscription, error)
@@ -177,7 +181,12 @@ func (s *service) newChapters(ctx context.Context, sub domain.SubscriptionExtend
 		lang = &sub.Language
 	}
 
-	lastChapters, err := s.mdex.LastChapters(ctx, sub.MangaID, lang, &sub.UpdatedAt)
+	// Sometimes manga appears in responses with a little delay from publication time
+	// so we need to recheck last few minutes before the previous request.
+	// In case of duplicate it will be filtered later.
+	publishedSince := sub.UpdatedAt.Add(-PublishedSinceDelay)
+
+	lastChapters, err := s.mdex.LastChapters(ctx, sub.MangaID, lang, &publishedSince)
 	if err != nil {
 		return nil, err
 	}

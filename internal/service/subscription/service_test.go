@@ -291,6 +291,8 @@ func TestUpdates_Error(t *testing.T) {
 
 	chap1 := domain.Chapter{ID: "ch_1"}
 
+	publishedSince := sub1.UpdatedAt.Add(-PublishedSinceDelay)
+
 	mdexApi := &mdexAPIMock{}
 	subRepo := &subRepoMock{}
 	s := New(mdexApi, subRepo)
@@ -317,7 +319,7 @@ func TestUpdates_Error(t *testing.T) {
 
 	// mdex.LastChapters error
 	calls.Add(subRepo.On("AllSubscriptions", ctx).Return([]domain.SubscriptionExtended{sub1}, nil))
-	calls.Add(mdexApi.On("LastChapters", ctx, sub1.MangaID, &sub1.Language, &sub1.UpdatedAt).Return(([]domain.Chapter)(nil), fmt.Errorf("error")))
+	calls.Add(mdexApi.On("LastChapters", ctx, sub1.MangaID, &sub1.Language, &publishedSince).Return(([]domain.Chapter)(nil), fmt.Errorf("error")))
 	_, err = s.Updates(ctx)
 	assert.Error(t, err, "error mdex.LastChapters expected")
 	subRepo.AssertExpectations(t)
@@ -326,7 +328,7 @@ func TestUpdates_Error(t *testing.T) {
 
 	// storage.IsChapterNotified error
 	calls.Add(subRepo.On("AllSubscriptions", ctx).Return([]domain.SubscriptionExtended{sub1}, nil))
-	calls.Add(mdexApi.On("LastChapters", ctx, sub1.MangaID, &sub1.Language, &sub1.UpdatedAt).Return([]domain.Chapter{chap1}, nil))
+	calls.Add(mdexApi.On("LastChapters", ctx, sub1.MangaID, &sub1.Language, &publishedSince).Return([]domain.Chapter{chap1}, nil))
 	calls.Add(subRepo.On("IsChapterNotified", ctx, sub1.Subscription, chap1).Return(false, fmt.Errorf("error")))
 	_, err = s.Updates(ctx)
 	assert.Error(t, err, "error storage.IsChapterNotified expected")
@@ -336,7 +338,7 @@ func TestUpdates_Error(t *testing.T) {
 
 	// storage.SetSubscriptionLastUpdate error
 	calls.Add(subRepo.On("AllSubscriptions", ctx).Return([]domain.SubscriptionExtended{sub1}, nil))
-	calls.Add(mdexApi.On("LastChapters", ctx, sub1.MangaID, &sub1.Language, &sub1.UpdatedAt).Return([]domain.Chapter{}, nil))
+	calls.Add(mdexApi.On("LastChapters", ctx, sub1.MangaID, &sub1.Language, &publishedSince).Return([]domain.Chapter{}, nil))
 	calls.Add(subRepo.On("SetSubscriptionLastUpdate", ctx, sub1.Subscription, mock.Anything, []domain.Chapter{}).Return(fmt.Errorf("error")))
 	_, err = s.Updates(ctx)
 	assert.Error(t, err, "error storage.SetSubscriptionLastUpdate expected")
@@ -356,6 +358,7 @@ func TestUpdates_Success(t *testing.T) {
 	}
 	chap1 := domain.Chapter{ID: "ch_1", Volume: "1", Chapter: "1", Title: "chap1"}
 	chap1dup := domain.Chapter{ID: "ch_1", Volume: "1", Chapter: "1", Title: "chap1 dup"} // should be filtered
+	publishedSince := sub1.UpdatedAt.Add(-PublishedSinceDelay)
 
 	expUpdates := []domain.Update{
 		{
@@ -372,7 +375,7 @@ func TestUpdates_Success(t *testing.T) {
 	s := New(mdexApi, subRepo)
 
 	subRepo.On("AllSubscriptions", ctx).Return([]domain.SubscriptionExtended{sub1}, nil)
-	mdexApi.On("LastChapters", ctx, sub1.MangaID, (*string)(nil), &sub1.UpdatedAt).Return([]domain.Chapter{chap1, chap1dup}, nil)
+	mdexApi.On("LastChapters", ctx, sub1.MangaID, (*string)(nil), &publishedSince).Return([]domain.Chapter{chap1, chap1dup}, nil)
 	subRepo.On("IsChapterNotified", ctx, sub1.Subscription, chap1).Return(false, nil)
 	subRepo.On("IsChapterNotified", ctx, sub1.Subscription, chap1dup).Return(false, nil)
 	subRepo.On("SetSubscriptionLastUpdate", ctx, sub1.Subscription, mock.Anything, []domain.Chapter{chap1}).Return(nil)
