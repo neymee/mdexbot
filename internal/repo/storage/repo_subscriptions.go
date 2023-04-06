@@ -209,10 +209,19 @@ func (r *Repo) DeleteAllSubscriptions(ctx context.Context, recipient domain.Reci
 		"recipient = ?",
 		recipient.Recipient(),
 	).Error
-
 	if err != nil {
 		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
 	}
+
+	// if there are no more subscriptions on this topic then remove the topic
+	err = r.db.Delete(
+		&database.Topic{},
+		"id IN (SELECT topic_id FROM topic_subscriptions GROUP BY topic_id HAVING EVERY(deleted_at IS NOT NULL))",
+	).Error
+	if err != nil {
+		return fmt.Errorf("%w: %w", werrors.DatabaseError, err)
+	}
+
 	return nil
 }
 
