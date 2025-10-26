@@ -1,5 +1,5 @@
 ## About
-A telegram bot that can notify you about new manga chapters on [MangaDex](https://mangadex.org). Can be found on [@mdex_new_chapter_bot](https://t.me/mdex_new_chapter_bot).
+A telegram bot that can notify you about new manga chapters on [MangaDex](https://mangadex.org).
 
 ![image](https://github.com/neymee/mdexbot/actions/workflows/go.yml/badge.svg)
 
